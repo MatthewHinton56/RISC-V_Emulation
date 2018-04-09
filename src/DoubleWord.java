@@ -114,4 +114,8 @@ public class DoubleWord implements LittleEndian{
 		DoubleWord dw = new DoubleWord(f,false);
 		System.out.println(dw.calculateValueSigned());
 	}
+	
+	public String toString() {
+		return this.generateHex();
+	}
 }

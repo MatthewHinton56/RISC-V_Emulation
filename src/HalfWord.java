@@ -108,6 +108,8 @@ public class HalfWord implements LittleEndian{
 		return halfWordArray[0].generateBitString() + halfWordArray[1].generateBitString();
 	}
 	
-	
+	public String toString() {
+		return this.generateHex();
+	}
 	
 }

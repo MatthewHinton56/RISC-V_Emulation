@@ -107,4 +107,8 @@ public class Word implements LittleEndian{
 		System.out.println(word.generateHexLE());
 		System.out.println(word.calculateValueSigned());
 	}
+	
+	public String toString() {
+		return this.generateHex();
+	}
 }

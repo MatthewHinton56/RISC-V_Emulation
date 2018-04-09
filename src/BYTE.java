@@ -113,7 +113,9 @@ public class BYTE implements LittleEndian {
 		return byteArray;
 	}
 	
-	
+	public String toString() {
+		return this.generateHex();
+	}
 	
 	
 }
