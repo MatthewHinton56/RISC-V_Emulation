@@ -16,12 +16,10 @@ public class RegisterFile extends TreeMap<String, DoubleWord>{
 		this.put("pc", new DoubleWord());
 	}
 
-	public DoubleWord put(String key, DoubleWord value) {
+	public void set(String key, DoubleWord value) {
 		// TODO Auto-generated method stub
-		if(!((String)key).equals("x0"))
-			return super.put(key, value);
-		else 
-			return new DoubleWord();
+			if(this.keySet().contains(key) && !key.equals("x0"))
+				this.put(key, value);
 		
 	}
 	

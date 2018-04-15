@@ -1,115 +1,62 @@
 import java.util.Arrays;
 
-public class HalfWord implements LittleEndian{
+public class HalfWord extends LittleEndian{
 
-	protected BYTE[] halfWordArray;
-
-	public String calculateValueSigned() {
-		boolean[] bitArray = generateBitArray();
-		long val = (bitArray[15]) ? ((int)Math.pow(-2, 15)) : 0;
-		for(int pos = 0; pos < 15; pos++) {
-			if(bitArray[pos]) {
-				val+= ((int)Math.pow(2, pos));
-			}
-		}
-		return ""+val;
-	}
-
-	public String calculateValueUnSigned() {
-		boolean[] bitArray = generateBitArray();
-		long val = 0;
-		for(int pos = 0; pos <= 15; pos++) {
-			if(bitArray[pos]) {
-				val+= ((int)Math.pow(2, pos));
-			}
-		}
-		return ""+val;
-	}
-
-	public String generateBitString() {
-		return halfWordArray[1].generateBitString() + halfWordArray[0].generateBitString();
-	}
-
-	public boolean[] generateBitArray() {
-		boolean[] bitArray = new boolean[16];
-		System.arraycopy(halfWordArray[0].byteArray, 0, bitArray, 0, 8);
-		System.arraycopy(halfWordArray[1].byteArray, 0, bitArray, 8, 8);
-		return bitArray;
-	}
-
-	public static void main(String[] args) {
-		HalfWord hw = new HalfWord("FFFF", false);
-		System.out.println(hw.calculateValueSigned());
-	}
+	public static final int HALFWORDSIZE = 32;
 	
 	public HalfWord() {
-		halfWordArray = new BYTE[2];
-		halfWordArray[0] = new BYTE();
-		halfWordArray[1] = new BYTE();
+		super(HALFWORDSIZE);
 	}
 	
-	public HalfWord(BYTE bLower, BYTE bUpper) {
-		halfWordArray = new BYTE[2];
-		halfWordArray[0] = bLower;
-		halfWordArray[1] = bUpper;
-	}
 	
 	public HalfWord(String hex, boolean LE) {
+		super(HALFWORDSIZE);
 		if(LE)
-			hex = LittleEndian.LEHexFixer(hex, 4);
+			hex = LEHexFixer(hex, HALFWORDSIZE);
 		else
-			hex = LittleEndian.hexFixer(hex,4);
-		String byteUpper = "";
-		String byteLower = "";
-		if(LE) {
-			byteUpper = hex.substring(2,4);
-			byteLower = hex.substring(0,2);
-		} else {
-			byteUpper = hex.substring(0,2);
-			byteLower = hex.substring(2, 4);
+			hex = hexFixer(hex ,HALFWORDSIZE);
+		for(int pos = 0; pos < hex.length(); pos += 2) {
+			boolean[] hexBYTE = getByte(hex.substring(pos, pos+2));
+			if(LE) {
+				System.arraycopy(hexBYTE, 0, bitArray, pos*BYTE.BYTESIZE, BYTE.BYTESIZE);
+			} else {
+				System.arraycopy(hexBYTE, 0, bitArray, BYTE.BYTESIZE - pos*BYTE.BYTESIZE, BYTE.BYTESIZE);
+			}
+			
 		}
-		boolean[] byteUpperArray = BYTE.getByte(byteUpper);
-		boolean[] byteLowerArray = BYTE.getByte(byteLower);
-		BYTE bUpper = new BYTE(byteUpperArray);
-		BYTE bLower = new BYTE(byteLowerArray);
-		halfWordArray = new BYTE[2];
-		halfWordArray[0] = bLower;
-		halfWordArray[1] = bUpper;
 	}
 	
-	public HalfWord(boolean bitArray[], boolean LE) {
-		boolean[] lowerByte = new boolean[8];
-		boolean[] upperByte = new boolean[8];
-		if(LE){
-			System.arraycopy(bitArray, 0, upperByte, 0, 8);
-			System.arraycopy(bitArray, 8, lowerByte, 0, 8);
-		} else {
-			System.arraycopy(bitArray, 0, lowerByte, 0, 8);
-			System.arraycopy(bitArray, 8, upperByte, 0, 8);
-		}
-		BYTE bUpper = new BYTE(upperByte);
-		BYTE bLower = new BYTE(lowerByte);
-		halfWordArray = new BYTE[2];
-		halfWordArray[0] = bLower;
-		halfWordArray[1] = bUpper;
-	}
-	
-
-	public String generateHexLE() {
-		return halfWordArray[0].generateHex() + halfWordArray[1].generateHex();
-	}
-
-	public String generateHex() {
-		return halfWordArray[1].generateHex() + halfWordArray[0].generateHex();
+	public HalfWord(boolean bitArray[]) {
+		super(bitArray);
 		
 	}
 	
-	public String generateBitStringLE() {
-		return halfWordArray[0].generateBitString() + halfWordArray[1].generateBitString();
+
+	
+	public Word extendToWord(boolean signed) {
+		 String hex = this.generateHex();
+		 if(signed) {
+			 boolean neg = this.getSign();
+			 hex = (neg) ? "FFFF" + hex : "0000" +hex;
+			 return new Word(hex, false);
+		 } 
+		 return new Word("0000" + hex, false);
 	}
 	
-	public String toString() {
-		return this.generateHex();
+	public DoubleWord extendToDoubleWord(boolean signed) {
+		String hex = this.generateHex();
+		 if(signed) {
+			 boolean neg = this.getSign();
+			 hex = (neg) ? "FFFFFFFFFFFF" + hex : "000000000000" +hex;
+			 return new DoubleWord(hex, false);
+		 } 
+		 return new DoubleWord("000000000000" + hex, false);
 	}
-	
+	// 0 <= pos < 2
+	public BYTE getBYTE(int pos) {
+		pos = pos*BYTE.BYTESIZE;
+		boolean[] bitArray = new boolean[BYTE.BYTESIZE];
+		System.arraycopy(this.bitArray, pos, bitArray, 0, BYTE.BYTESIZE);
+		return new BYTE(bitArray);
+	}
 }
