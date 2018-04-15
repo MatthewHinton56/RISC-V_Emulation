@@ -4,21 +4,22 @@ public abstract class LittleEndian {
 	protected final boolean bitArray[];
 	
 	public String calculateValueSigned() {
-		int val = (bitArray[bitArray.length-1]) ? ((int)Math.pow(-2, 7)) : 0;
+		long val = (bitArray[bitArray.length-1]) ? ((long)Math.pow(-2, bitArray.length-1)) : 0;
 		for(int pos = 0; pos < bitArray.length-1; pos++) {
 			if(bitArray[pos]) {
-				val+= ((int)Math.pow(2, pos));
+				val+= ((long)Math.pow(2, pos));
 			}
 		}
 		return ""+val;
 	}
 	public String calculateValueUnSigned() {
-		long val = (bitArray[bitArray.length-1]) ? ((int)Math.pow(-2, 63)) : 0;
+		long val = (bitArray[bitArray.length-1]) ? ((long)Math.pow(2, bitArray.length-1)) : 0;
 		for(int pos = 0; pos < bitArray.length-1; pos++) {
 			if(bitArray[pos]) {
-				val+= ((int)Math.pow(2, pos));
+				val+= ((long)Math.pow(2, pos));
 			}
 		}
+		System.out.println(val);
 		return Long.toUnsignedString(val);
 	}
 	public String generateBitString() {
@@ -95,13 +96,12 @@ public abstract class LittleEndian {
 			if(bitArray[pos+start]) {
 				valLowerFour+= ((int)Math.pow(2, pos));
 			}
-			if(bitArray[pos+start]) {
+			if(bitArray[pos+start+4]) {
 				valUpperFour+= ((int)Math.pow(2, pos));
 			}
 		}
 		String lowerFour = (valLowerFour > 9) ? ((char)(55+valLowerFour))+"" : ""+ valLowerFour;
 		String upperFour = (valUpperFour > 9) ? ((char)(55+valUpperFour))+"" : ""+ valUpperFour;
-		
 		return upperFour+lowerFour;
 	}
 	
