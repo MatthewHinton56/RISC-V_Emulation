@@ -10,16 +10,17 @@ public class Instruction {
 	MISC_MEM_FUNCT3_TO_FUNCTION, SYSYEM_FUNCT3_TO_FUNCTION, JALR_FUNCT3_TO_FUNCTION;
 
 	boolean[] immediate;
-	String[] registers;
-	//0 - RD, 1 - RS1, 2 - RS2,
-	LittleEndian[] values;
+	String Rd, Rs1, Rs2;
+	DoubleWord RS1Val, RS2Val, EVal, MVal;
 	//0 - RS1Val, 1 - RS2Val, 2 - EVal, 3 - MVal
 	String type, instruction;
+	boolean memory;
+	public boolean stop;
 	public Instruction(boolean[] instructionBitEncoding) {
-		values = new LittleEndian[4];
-		registers = new String[3];
 		String opCode = bitToString(0,6, instructionBitEncoding);
-		if(contains(UTYPE, opCode))
+		if(opCode.equals(STOP))
+			stop = true;
+		else if(contains(UTYPE, opCode))
 			generateUType(instructionBitEncoding, opCode);
 		else if(contains(UJTYPE,opCode)) 
 			generateUJType(instructionBitEncoding, opCode);
@@ -31,6 +32,7 @@ public class Instruction {
 			generateRType(instructionBitEncoding, opCode);
 		else
 			generateIType(instructionBitEncoding, opCode);
+		memory = (opCode.equals(STORE) || opCode.equals(LOAD));
 
 	}
 	private void generateIType(boolean[] instructionBitEncoding, String opCode) {
@@ -58,10 +60,11 @@ public class Instruction {
 			instruction = JALR_FUNCT3_TO_FUNCTION.get(funct3);
 			break;
 		}
-		String Rd = bitToString(7,11,instructionBitEncoding); 
-		String Rs1 = bitToString(15,19,instructionBitEncoding);
-		registers[0] = Rd;
-		registers[1] = Rs1;
+		String Rd = getRegister(7,11,instructionBitEncoding); 
+		String Rs1 = getRegister(15,19,instructionBitEncoding);
+		this.Rd = Rd;
+		this.Rs1 = Rs1;
+		this.Rs2 = "x0";
 	}
 	
 	private void generateRType(boolean[] instructionBitEncoding, String opCode) {
@@ -74,12 +77,12 @@ public class Instruction {
 		case OP_32:
 			instruction = OP_32_FUNCT3_TO_FUNCTION.get(funct3);
 		}
-		String Rd = bitToString(7,11,instructionBitEncoding); 
-		String Rs1 = bitToString(15,19,instructionBitEncoding);
-		String Rs2 = bitToString(20,24,instructionBitEncoding);
-		registers[0] = Rd;
-		registers[1] = Rs1;
-		registers[2] = Rs2;
+		String Rd = getRegister(7,11,instructionBitEncoding); 
+		String Rs1 = getRegister(15,19,instructionBitEncoding);
+		String Rs2 = getRegister(20,24,instructionBitEncoding);
+		this.Rd = Rd;
+		this.Rs1 = Rs1;
+		this.Rs2 = Rs2;
 	}
 	
 	private void generateSType(boolean[] instructionBitEncoding, String opCode) {
@@ -93,10 +96,11 @@ public class Instruction {
 			instruction = STORE_FUNCT3_TO_FUNCTION.get(funct3);
 			break;
 		}
-		String Rs1 = bitToString(15,19,instructionBitEncoding);
-		String Rs2 = bitToString(20,24,instructionBitEncoding);
-		registers[1] = Rs1;
-		registers[2] = Rs2;
+		String Rs1 = getRegister(15,19,instructionBitEncoding);
+		String Rs2 = getRegister(20,24,instructionBitEncoding);
+		this.Rd = "x0";
+		this.Rs1 = Rs1;
+		this.Rs2 = Rs2;
 	}
 
 	private void generateSBType(boolean[] instructionBitEncoding, String opCode) {
@@ -112,11 +116,12 @@ public class Instruction {
 			instruction = BRANCH_FUNCT3_TO_FUNCTION.get(funct3);
 			break;
 		}
-		String Rs1 = bitToString(15,19,instructionBitEncoding);
-		String Rs2 = bitToString(20,24,instructionBitEncoding);
+		String Rs1 = getRegister(15,19,instructionBitEncoding);
+		String Rs2 = getRegister(20,24,instructionBitEncoding);
 		instruction = correctInstruction(instruction, instructionBitEncoding);
-		registers[1] = Rs1;
-		registers[2] = Rs2;
+		this.Rd = "x0";
+		this.Rs1 = Rs1;
+		this.Rs2 = Rs2;
 	}
 
 	private void generateUJType(boolean[] instructionBitEncoding, String opCode) {
@@ -127,8 +132,10 @@ public class Instruction {
 		System.arraycopy(instructionBitEncoding, 31, immediate, 20, 1);
 		type = "UJ";
 		instruction = UJ_OPCODE_TO_INSTRUCTION.get(opCode);
-		String Rd = bitToString(7,11,instructionBitEncoding);
-		registers[0] = Rd;
+		String Rd = getRegister(7,11,instructionBitEncoding);
+		this.Rd = Rd;
+		this.Rs1 = "x0";
+		this.Rs2 = "x0";
 	}
 
 	private void generateUType(boolean[] instructionBitEncoding, String opCode) {
@@ -136,8 +143,10 @@ public class Instruction {
 		System.arraycopy(instructionBitEncoding, 12, immediate, 12, 20);
 		type = "U";
 		instruction = U_OPCODE_TO_INSTRUCTION.get(opCode);
-		String Rd = bitToString(7,11,instructionBitEncoding); 
-		registers[0] = Rd;
+		String Rd = getRegister(7,11,instructionBitEncoding); 
+		this.Rd = Rd;
+		this.Rs1 = "x0";
+		this.Rs2 = "x0";
 	}
 
 	//Creates bit string from start <= end, 0 <= start <= end, 0 <= end < bitArray.length
@@ -169,7 +178,7 @@ public class Instruction {
 				return instruction;	
 	}
 
-	
+	public static final String STOP = "0000000";
 	public static final String LUI = "1110110";
 	public static final String AUIPC = "1110100";
 	public static final String JAL = "1111011";
@@ -278,5 +287,13 @@ public class Instruction {
 		JALR_FUNCT3_TO_FUNCTION = new HashMap<String, String> ();
 		SYSYEM_FUNCT3_TO_FUNCTION.put(ZERO, "JALR");
 	}
-
+	//end - start + 1 == 5
+	public static String getRegister(int start, int end, boolean[] bitArray) {
+		int val = 0;
+		for(int pos = start; start <= end; pos++) {
+			pos+= ((long)Math.pow(2, pos));
+		}
+		return "x" + val;
+	}
+	
 }

@@ -3,14 +3,14 @@ public abstract class LittleEndian {
 
 	protected final boolean bitArray[];
 	
-	public String calculateValueSigned() {
+	public long calculateValueSigned() {
 		long val = (bitArray[bitArray.length-1]) ? ((long)Math.pow(-2, bitArray.length-1)) : 0;
 		for(int pos = 0; pos < bitArray.length-1; pos++) {
 			if(bitArray[pos]) {
 				val+= ((long)Math.pow(2, pos));
 			}
 		}
-		return ""+val;
+		return val;
 	}
 	public String calculateValueUnSigned() {
 		long val = (bitArray[bitArray.length-1]) ? ((long)Math.pow(2, bitArray.length-1)) : 0;
