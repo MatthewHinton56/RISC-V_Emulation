@@ -13,13 +13,6 @@ public class ALU {
 		return c;
 	}
 
-	public static boolean[] OR(boolean[] a, boolean[] b) {
-		boolean[] c = new boolean[a.length];
-		for(int pos = 0; pos < a.length; pos++)
-			c[pos] = a[pos] || b[pos];
-		return c;
-	}
-
 	public static boolean[] XOR(boolean[] a, boolean[] b) {
 		boolean[] c = new boolean[a.length];
 		for(int pos = 0; pos < a.length; pos++)
@@ -78,57 +71,6 @@ public class ALU {
 		boolean[] b = new boolean[a.length];
 		b[0] = true;
 		return ADD(a,b);
-	}
-	
-	public static boolean[] shiftLeft(boolean[] a, int shamt) {
-		boolean[] c = new boolean[a.length];
-		for(int pos = c.length-1; pos >= 0; pos--) {
-			if(pos + shamt < c.length)
-				c[pos+shamt] = c[pos];
-		}
-		return c;
-	}
-
-	public static boolean[] shiftRight(boolean[] a, int shamt, boolean logic) {
-		boolean[] c = new boolean[a.length];
-		boolean sign = a[a.length-1];
-		for(int pos = 0; pos < c.length; pos++) {
-			if(pos - shamt >= 0)
-				c[pos - shamt] = c[pos];
-		}
-		if(!logic) {
-			for(int pos = 0; pos < shamt; pos++)
-				c[c.length-pos] = sign;
-		}
-		return c;
-	}
-
-	public static boolean LessThan(boolean[] a, boolean[] b, boolean U) {
-		SUB(a,b);
-		if(U)
-			return CF;
-		return SF ^ OF;
-	}
-	
-	public static boolean[] setLessThan(boolean[] a, boolean[] b, boolean U) {
-		boolean[] c = new boolean[a.length];
-		boolean LT = LessThan(a, b, U);
-		c[0] = LT;
-		return c;
-	}
-	
-	public static boolean GreaterEqual(boolean[] a, boolean[] b, boolean U) {
-		SUB(a,b);
-		if(U)
-			return !CF;
-		return !(SF ^ OF);
-	}
-	
-	public static boolean[] SetGreaterEqual(boolean[] a, boolean[] b, boolean U) {
-		boolean[] c = new boolean[a.length];
-		boolean GTE = GreaterEqual(a, b, U);
-		c[0] = GTE;
-		return c;
 	}
 	
 	public static boolean[] signExtension(boolean[] a, boolean U, int targetSize) {

@@ -9,11 +9,7 @@ public class RegisterFile extends TreeMap<String, DoubleWord>{
 
 
 	public RegisterFile() {
-		super(new RegisterComparator());
-		for(int r = 0; r < 32; r++) {
-			super.put("x"+r, new DoubleWord());
-		}
-		this.put("pc", new DoubleWord());
+		
 	}
 
 	public void set(String key, DoubleWord value) {
@@ -37,23 +33,6 @@ public class RegisterFile extends TreeMap<String, DoubleWord>{
 		return ret;
 	}
 	
-	
-}
-
-class RegisterComparator implements Comparator<String> {
-
-	@Override
-	public int compare(String o1, String o2) {
-		if(o1.compareTo(o2) == 0)
-			return 0;
-		int letter = o1.charAt(0) - o2.charAt(0);
-		if(letter != 0)
-			return (letter < 0) ? -1 : 1;
-		int i1 = Integer.parseInt(o1.substring(1));
-		int i2 = Integer.parseInt(o2.substring(1));
-		return ((i1-i2) < 0) ? -1 : 1;
-	}
-
 	
 }
 
