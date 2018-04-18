@@ -1,20 +1,35 @@
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.TreeMap;
 
 
-public class RegisterFile extends TreeMap<String, DoubleWord>{
+public class RegisterFile extends HashMap<String, DoubleWord>{
 
 	private static final long serialVersionUID = 1L;
 
 
 
 	public RegisterFile() {
-		
+		super.put("%rax", new DoubleWord());
+		super.put("%rcx", new DoubleWord());
+		super.put("%rdx", new DoubleWord());
+		super.put("%rbx", new DoubleWord());
+		super.put("%rsp", new DoubleWord());
+		super.put("%rbp", new DoubleWord());
+		super.put("%rsi", new DoubleWord());
+		super.put("%rdi", new DoubleWord());
+		super.put("%r8", new DoubleWord());
+		super.put("%r9", new DoubleWord());
+		super.put("%r10", new DoubleWord());
+		super.put("%r11", new DoubleWord());
+		super.put("%r12", new DoubleWord());
+		super.put("%r13", new DoubleWord());
+		super.put("%r14", new DoubleWord());
 	}
 
 	public void set(String key, DoubleWord value) {
 		// TODO Auto-generated method stub
-			if(this.keySet().contains(key) && !key.equals("x0"))
+			if(this.keySet().contains(key))
 				this.put(key, value);
 		
 	}

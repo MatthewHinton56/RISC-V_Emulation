@@ -49,4 +49,9 @@ public class DoubleWord extends LittleEndian{
 		System.arraycopy(this.bitArray, pos, bitArray, 0, Word.WORDSIZE);
 		return new Word(bitArray);
 	}
+	
+	public DoubleWord(long l) {
+		super(ALU.longToBitArray(l, DOUBLEWORDSIZE));
+	}
+		
 }
