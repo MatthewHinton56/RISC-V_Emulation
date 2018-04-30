@@ -10,7 +10,7 @@ public class Instruction {
 	DoubleWord valA, valB, valE, valM, valP, standardValPIncrement;
 	//0 - RS1Val, 1 - RS2Val, 2 - EVal, 3 - MVal
 	String instruction;
-	boolean memory, writeBack;
+	boolean memory, conditionMet;
 	public boolean stop;
 
 
@@ -39,10 +39,7 @@ public class Instruction {
 			standardValPIncrement = new DoubleWord(10);
 		else 
 			standardValPIncrement = new DoubleWord(2);
-		writeBack = true;
-		
-			
-		
+		conditionMet = true;
 	}
 
 

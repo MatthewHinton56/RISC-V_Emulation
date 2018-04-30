@@ -80,7 +80,7 @@ public class ALU {
 		return IADD(a,b);
 	}
 	
-	public static boolean[] ADDEIGHT(boolean[] a) {
+	public static boolean[] INCREMENTEIGHT(boolean[] a) {
 		boolean[] b = new boolean[a.length];
 		b[3] = true;
 		return IADD(a,b);
@@ -183,7 +183,7 @@ public class ALU {
 	}
 
 
-	public static boolean isOF() {
+	public static boolean OF() {
 		return OF;
 	}
 	

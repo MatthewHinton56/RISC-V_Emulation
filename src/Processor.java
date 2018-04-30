@@ -6,14 +6,14 @@ public class Processor {
 	public static DoubleWord PC;
 	public static String status = "AOK";
 
-	public void fetch() {
+	public static void fetch() {
 		int pcInt = ((int)PC.calculateValueSigned());
 		BYTE[] instructionArray = Memory.getInstruction(pcInt);
 		currentInstruction = new Instruction(instructionArray);
 		currentInstruction.valP = new DoubleWord(ALU.IADD(PC.bitArray, currentInstruction.standardValPIncrement.bitArray));
 	}
 
-	public void decode() {
+	public static void decode() {
 		currentInstruction.valA = registerFile.get(currentInstruction.rA);
 		currentInstruction.valB = registerFile.get(currentInstruction.rB);
 		String instruction = currentInstruction.instruction;
@@ -25,7 +25,7 @@ public class Processor {
 
 	}
 
-	public void execute() {
+	public static void execute() {
 		switch(currentInstruction.instruction) {
 		case "halt":
 			status = "HLT";
@@ -52,8 +52,37 @@ public class Processor {
 			break;
 		case "ret":	
 		case "popq":
-			currentInstruction.valE = new DoubleWord(ALU.ADDEIGHT(currentInstruction.valB.bitArray));
+			currentInstruction.valE = new DoubleWord(ALU.INCREMENTEIGHT(currentInstruction.valB.bitArray));
 			break;
+		case "jle":
+		case "cmovle":
+			currentInstruction.conditionMet = (ALU.SF() ^ ALU.OF()) || ALU.ZF();
+			break;
+		case "jl":
+		case "cmovl":
+			currentInstruction.conditionMet = ALU.SF() ^ ALU.OF();
+			break;	
+		case "je":
+		case "cmove":
+			currentInstruction.conditionMet = ALU.ZF();
+			break;		
+		case "jne":
+		case "cmovne":
+			currentInstruction.conditionMet = !ALU.ZF();
+			break;	
+		case "jge":
+		case "cmovge":
+			currentInstruction.conditionMet = !(ALU.SF() ^ ALU.OF());
+			break;	
+		case "jg":
+		case "cmovg":
+			currentInstruction.conditionMet = !(ALU.SF() ^ ALU.OF()) && !ALU.ZF();
+			break;		
+		}
+	}
+
+	public static void memory() {
+		if(currentInstruction.instruction.equals("rmmovq")) {
 			
 		}
 	}
