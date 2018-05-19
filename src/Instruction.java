@@ -100,5 +100,5 @@ public class Instruction {
 	}
 
 	public static final String[] IMMEDIATE_SPECIAL_CASE = {"call", "jmp", "jge", "jg", "je", "jne", "jl", "jle"}; 
-	public static final String[] MEMORY_FUNCTIONS = {"rmmovq, mrmovq"};
+	public static final String[] MEMORY_FUNCTIONS = {"rmmovq","mrmovq", "call", "ret", "popq","pushq"};
 }
