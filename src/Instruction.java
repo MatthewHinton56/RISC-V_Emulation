@@ -1,3 +1,4 @@
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class Instruction {
@@ -21,9 +22,15 @@ public class Instruction {
 		String hexFunction = instructionArray[0].generateHex();
 		instruction = BYTE_TO_FUNCTION.get(hexFunction);
 		int immediateStart = (inArray(IMMEDIATE_SPECIAL_CASE, instruction)) ? 1 : 2;
-		String hexRegister = instructionArray[1].generateHex();
-		rA = hexRegister.substring(0,1);
-		rB = hexRegister.substring(1);
+		String hexRegister = null;
+		try {
+		 hexRegister = instructionArray[1].generateHex();
+		}
+		catch(NullPointerException e) {
+			System.out.println(Arrays.toString(instructionArray));
+		}
+		rA = NIBBLE_TO_REGISTER.get(hexRegister.substring(0,1));
+		rB = NIBBLE_TO_REGISTER.get(hexRegister.substring(1));
 		String imm = "";
 		for(int i = immediateStart; i <= immediateStart+7; i++)
 			imm+= instructionArray[i];

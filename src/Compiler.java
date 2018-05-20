@@ -19,7 +19,7 @@ public class Compiler {
 		COMPILED_CONSTANTS.clear();
 		start_address = inputLines.get(0).address;
 		String output = "";
-		String offset;
+		String offset,rB;
 		String[] instruction;
 		for(Line l: inputLines) {
 			output += "0x" + l.address +": ";
@@ -98,17 +98,18 @@ public class Compiler {
 
 			case "rmmovq": 
 				offset = l.splitLine[2].substring(0,l.splitLine[2].indexOf("("));
+				rB = l.splitLine[2].substring(l.splitLine[2].indexOf("(")+1,l.splitLine[2].indexOf(")"));
 				if(TAG_TO_ADDRESS.containsKey(offset)) {
 					DoubleWord dw = new DoubleWord(TAG_TO_ADDRESS.get(offset),false);
-					instruction = InstructionBuilder.getInstruction(l.splitLine[0], "No register", l.splitLine[1], dw);
+					instruction = InstructionBuilder.getInstruction(l.splitLine[0], l.splitLine[1], rB, dw);
 					output += convertArrayToString(instruction);
 				} else if(offset.contains("0x")) {
 					DoubleWord dw = new DoubleWord(offset.substring(2), false);
-					instruction = InstructionBuilder.getInstruction(l.splitLine[0], "No register", l.splitLine[1], dw);
+					instruction = InstructionBuilder.getInstruction(l.splitLine[0],  l.splitLine[1], rB, dw);
 					output += convertArrayToString(instruction);
 				} else {
 					DoubleWord dw = (offset.length() > 0) ? new DoubleWord(Long.parseLong(offset)) : new DoubleWord(0);
-					instruction = InstructionBuilder.getInstruction(l.splitLine[0], "No register", l.splitLine[1], dw);
+					instruction = InstructionBuilder.getInstruction(l.splitLine[0],  l.splitLine[1], rB, dw);
 					output += convertArrayToString(instruction);
 				}
 				COMPILED_INSTRUCTIONS.put(Long.parseLong(l.address, 16),instruction);
@@ -116,17 +117,18 @@ public class Compiler {
 
 			case "mrmovq": 
 				offset = l.splitLine[1].substring(0,l.splitLine[1].indexOf("("));
+				rB = l.splitLine[1].substring(l.splitLine[1].indexOf("(")+1,l.splitLine[1].indexOf(")"));
 				if(TAG_TO_ADDRESS.containsKey(offset)) {
 					DoubleWord dw = new DoubleWord(TAG_TO_ADDRESS.get(offset),false);
-					instruction = InstructionBuilder.getInstruction(l.splitLine[0], "No register", l.splitLine[2], dw);
+					instruction = InstructionBuilder.getInstruction(l.splitLine[0], l.splitLine[2], rB, dw);
 					output += convertArrayToString(instruction);
 				} else if(offset.contains("0x")) {
 					DoubleWord dw = new DoubleWord(offset.substring(2), false);
-					instruction = InstructionBuilder.getInstruction(l.splitLine[0], "No register", l.splitLine[2], dw);
+					instruction = InstructionBuilder.getInstruction(l.splitLine[0], l.splitLine[2], rB, dw);
 					output += convertArrayToString(instruction);
 				} else {
 					DoubleWord dw = (offset.length() > 0) ? new DoubleWord(Long.parseLong(offset)) : new DoubleWord(0);
-					instruction = InstructionBuilder.getInstruction(l.splitLine[0], "No register", l.splitLine[2], dw);
+					instruction = InstructionBuilder.getInstruction(l.splitLine[0], l.splitLine[2], rB, dw);
 					output += convertArrayToString(instruction);
 				}
 				COMPILED_INSTRUCTIONS.put(Long.parseLong(l.address, 16),instruction);
@@ -209,9 +211,13 @@ public class Compiler {
 			input+=scan.nextLine()+"\n";
 		}
 		System.out.println(compile(input));
-		System.out.println(Compiler.start_address);
-		System.out.println(Compiler.COMPILED_CONSTANTS);
-		System.out.println(Compiler.COMPILED_INSTRUCTIONS);
+		//System.out.println(Compiler.start_address);
+		//System.out.println(Compiler.COMPILED_CONSTANTS);
+		//System.out.println(Compiler.COMPILED_INSTRUCTIONS);
+		Processor.initialize();
+		Processor.run();
+		System.out.println(Processor.registerFile.get("%rax"));
+		System.out.println(Processor.PC.calculateValueSigned());
 	}
 
 	private static class Line {

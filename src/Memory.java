@@ -7,10 +7,10 @@ public class Memory {
 	public static BYTE[] getInstruction(long position) {
 		BYTE instructionArray[] = new BYTE[10];
 		for(Long i = position; i < position + 10; i++) {
-			BYTE instruct = memory.get(position);
+			BYTE instruct = memory.get(i);
 			if(instruct == null)
-				memory.put(position, BYTE.randomBYTE());
-			instructionArray[(int) (i-position)] =  memory.get(position);
+				memory.put(i, BYTE.randomBYTE());
+			instructionArray[(int) (i-position)] =  memory.get(i);
 		}
 		return instructionArray;
 	}

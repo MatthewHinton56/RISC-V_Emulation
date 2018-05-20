@@ -1,3 +1,4 @@
+import java.util.Arrays;
 
 public class Processor {
 
@@ -13,6 +14,7 @@ public class Processor {
 		currentInstruction.valP = new DoubleWord(ALU.IADD(PC.bitArray, currentInstruction.standardValPIncrement.bitArray));
 		if(InstructionBuilder.getKey(Instruction.BYTE_TO_FUNCTION, currentInstruction.instruction) == null)
 			status = "INV";
+		//System.out.println(currentInstruction.instruction);
 	}
 
 	public static void decode() {
@@ -106,9 +108,9 @@ public class Processor {
 				Memory.storeDoubleWord(address, currentInstruction.valP);
 				break;
 			case "ret":
-				address = currentInstruction.valE.calculateValueSigned();//since map is used, negative are allowed, rather than dealing with signed/unsigned, 
+				address = currentInstruction.valA.calculateValueSigned();//since map is used, negative are allowed, rather than dealing with signed/unsigned, 
 				//as it essentially the same value.
-				Memory.storeDoubleWord(address, currentInstruction.valA);
+				currentInstruction.valM = Memory.loadDoubleWord(address);
 				break;
 			}
 		}
@@ -120,13 +122,14 @@ public class Processor {
 		case "subq":
 		case "xorq":
 		case "andq":
-			registerFile.put(currentInstruction.rB, currentInstruction.valE);
+			registerFile.set(currentInstruction.rB, currentInstruction.valE);
 			break;
 		case "mrmovq":
-			registerFile.put(currentInstruction.rB, currentInstruction.valM);
+			registerFile.set(currentInstruction.rA, currentInstruction.valM);
 			break;
 		case "irmovq":
-			registerFile.put(currentInstruction.rB, currentInstruction.immediate);
+			registerFile.set(currentInstruction.rB, currentInstruction.immediate);
+			break;
 		case "rrmovq":
 		case "cmovl":
 		case "cmovle":
@@ -135,14 +138,14 @@ public class Processor {
 		case "cmovg":
 		case "cmovge":
 			DoubleWord dw = (currentInstruction.conditionMet) ? currentInstruction.valA : currentInstruction.valB;
-			registerFile.put(currentInstruction.rB, dw);
+			registerFile.set(currentInstruction.rB, dw);
 			break;
 		case "popq":
-			registerFile.put(currentInstruction.rA, currentInstruction.valM);
-		case "call":
 		case "ret":
+			registerFile.set(currentInstruction.rA, currentInstruction.valM);
+		case "call":
 		case "pushq": 
-			registerFile.put("%rsp", currentInstruction.valE);
+			registerFile.set("%rsp", currentInstruction.valE);
 			break;
 		}
 	}
@@ -168,11 +171,19 @@ public class Processor {
 		PC = currentInstruction.valP;
 	}
 
-	public static void initialize(DoubleWord PC) {
-		Processor.PC = PC;
-		status = "AOK";
+	public static void initialize() {
+		if(Compiler.compiled) {
+			Processor.PC = new DoubleWord(Long.parseLong(Compiler.start_address,16));
+			for(long l: Compiler.COMPILED_CONSTANTS.keySet())
+				Memory.storeDoubleWord(l, Compiler.COMPILED_CONSTANTS.get(l));
+			for(long l: Compiler.COMPILED_INSTRUCTIONS.keySet())
+				Memory.storeInstruction(l, Compiler.COMPILED_INSTRUCTIONS.get(l));
+			status = "AOK";
+		} else {
+			status = "HLT";
+		}
 	}
-	
+
 	public static void step() {
 		if(status.equals("AOK")) {
 			fetch();
@@ -185,7 +196,7 @@ public class Processor {
 			}
 		}
 	}
-	
+
 	public static void run() {
 		while(status.equals("AOK")) {
 			fetch();
@@ -195,8 +206,11 @@ public class Processor {
 				memory();
 				writeBack();
 				pc();
+				//System.out.println(registerFile.get("%rdx"));
+				//System.out.println(registerFile.get("%rsp"));
+				//System.out.println(PC.calculateValueSigned());
 			}
 		}
 	}
-	
+
 }
