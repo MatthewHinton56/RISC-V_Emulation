@@ -5,9 +5,9 @@ public class InstructionBuilder {
 	public static String[] getInstruction(String instruction, String rA, String rB, DoubleWord immediate) {
 		if(Instruction.inArray(ONE_BYTE, instruction))
 			return instructionOneByte(instruction);
-		if(Instruction.inArray(ONE_BYTE, instruction))
+		if(Instruction.inArray(TEN_BYTE, instruction))
 			return instructionTenByte(instruction, rA, rB, immediate);
-		if(Instruction.inArray(ONE_BYTE, instruction))
+		if(Instruction.inArray(NINE_BYTE, instruction))
 			return instructionNineByte(instruction, immediate);
 		return instructionTwoByte(instruction, rA, rB);
 	}
@@ -43,7 +43,7 @@ public class InstructionBuilder {
 	}
 
 	public static String[] instructionTenByte(String instruction, String rA, String rB, DoubleWord immediate) {
-		String instructionArray[] = new String[9];
+		String instructionArray[] = new String[10];
 		instructionArray[0] = getKey(Instruction.BYTE_TO_FUNCTION, instruction);
 		String registerHex =  getKey(Instruction.NIBBLE_TO_REGISTER, rA) + getKey(Instruction.NIBBLE_TO_REGISTER, rB);
 		instructionArray[1] =  registerHex;

@@ -64,6 +64,7 @@ public abstract class LittleEndian {
 	}
 	
 	public static String LEHexFixer(String hex, int requiredSize) {
+		requiredSize = requiredSize/4;
 		char c = hex.charAt(hex.length()-2);
 		boolean sign = (c >= 'A' && c <= 'F');
 		String signExtension = (sign) ? "F" : "0"; 
@@ -79,6 +80,7 @@ public abstract class LittleEndian {
 	}
 	
 	public static String hexFixer(String hex, int requiredSize) {
+		requiredSize = requiredSize/4;
 		char c = hex.charAt(0);
 		boolean sign = (c >= 'A' && c <= 'F');
 		String signExtension = (sign) ? "F" : "0"; 

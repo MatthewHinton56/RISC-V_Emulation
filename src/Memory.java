@@ -31,6 +31,11 @@ public class Memory {
 		for(long i = position; i < position + 8; i++)
 			memory.put(i, new BYTE(val.getBYTE((int) (i-position)).generateHex()));
 	}
+	
+	public static void storeInstruction(long position, String[] instruction) {
+		for(long i = position; i < position + instruction.length; i++)
+			memory.put(i, new BYTE(instruction[((int) (i-position))]));
+	}
 	/*public static final BYTE[] memory = new BYTE[8192];
 	public static final HashSet<Integer> memoryInUse = new HashSet<Integer>();
 	static {

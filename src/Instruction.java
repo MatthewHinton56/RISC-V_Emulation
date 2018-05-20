@@ -1,6 +1,9 @@
 import java.util.HashMap;
 
 public class Instruction {
+
+	public static final HashMap<String, String> BYTE_TO_FUNCTION = new HashMap<String, String>();
+	public static final HashMap<String, String> NIBBLE_TO_REGISTER = new HashMap<String, String>();
 	static {
 		generateMaps();
 	}
@@ -13,11 +16,6 @@ public class Instruction {
 	boolean memory, conditionMet;
 	public boolean stop;
 
-
-
-	public static final HashMap<String, String> BYTE_TO_FUNCTION = new HashMap<String, String>();
-
-	public static final HashMap<String, String> NIBBLE_TO_REGISTER = new HashMap<String, String>();
 
 	public Instruction(BYTE[] instructionArray) {
 		String hexFunction = instructionArray[0].generateHex();

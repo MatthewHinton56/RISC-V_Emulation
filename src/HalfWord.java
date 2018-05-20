@@ -18,9 +18,9 @@ public class HalfWord extends LittleEndian{
 		for(int pos = 0; pos < hex.length(); pos += 2) {
 			boolean[] hexBYTE = getByte(hex.substring(pos, pos+2));
 			if(LE) {
-				System.arraycopy(hexBYTE, 0, bitArray, pos*BYTE.BYTESIZE, BYTE.BYTESIZE);
+				System.arraycopy(hexBYTE, 0, bitArray, pos*BYTE.BYTESIZE/2, BYTE.BYTESIZE);
 			} else {
-				System.arraycopy(hexBYTE, 0, bitArray, BYTE.BYTESIZE - pos*BYTE.BYTESIZE, BYTE.BYTESIZE);
+				System.arraycopy(hexBYTE, 0, bitArray, BYTE.BYTESIZE - (pos/2+1)*BYTE.BYTESIZE, BYTE.BYTESIZE);
 			}
 			
 		}
