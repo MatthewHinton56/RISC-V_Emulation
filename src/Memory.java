@@ -1,63 +1,69 @@
+import java.util.HashMap;
+import java.util.HashSet;
 
 public class Memory {
-	public static final BYTE[] memory = new BYTE[8192];
+	public static final HashMap<Long,BYTE> memory = new HashMap<Long,BYTE>();
+	
+	public static BYTE[] getInstruction(long position) {
+		BYTE instructionArray[] = new BYTE[10];
+		for(Long i = position; i < position + 10; i++) {
+			BYTE instruct = memory.get(i);
+			if(instruct == null)
+				memory.put(i, BYTE.randomBYTE());
+			instructionArray[(int) (i-position)] =  memory.get(i);
+		}
+		return instructionArray;
+	}
+	
+	public static DoubleWord loadDoubleWord(long position) {
+		String immediate = "";
+		for(long i = position; i < position + 8; i++) {
+			if(memory.get(i).generateHex() == null) {
+				memory.put(i, BYTE.randomBYTE());
+			}
+			immediate += memory.get(i).generateHex();
+		}
+		
+		return new DoubleWord(immediate, true);
+	}
+	
+	public static void storeDoubleWord(long position, DoubleWord val) {
+		for(long i = position; i < position + 8; i++)
+			memory.put(i, new BYTE(val.getBYTE((int) (i-position)).generateHex()));
+	}
+	
+	public static void storeInstruction(long position, String[] instruction) {
+		for(long i = position; i < position + instruction.length; i++)
+			memory.put(i, new BYTE(instruction[((int) (i-position))]));
+	}
+	/*public static final BYTE[] memory = new BYTE[8192];
+	public static final HashSet<Integer> memoryInUse = new HashSet<Integer>();
 	static {
 		for(int pos = 0; pos < memory.length;pos++)
 			memory[pos] = new BYTE();
 	}
-	
-	//Store B, HW, W, DW
-	//Load B, HW, W, DW
-	public static BYTE loadByte(int pos) {
-		return memory[pos];
+
+	public static BYTE[] getInstruction(int position) {
+		BYTE instructionArray[] = new BYTE[10];
+		for(int i = position; i < position + 10; i++)
+			instructionArray[i-position] = memory[i];
+		return instructionArray;
 	}
 	
-	public static BYTE storeByte(BYTE b, int pos) {
-		BYTE bOld = loadByte(pos);
-		memory[pos] = b;
-		return bOld;
+	
+	public static DoubleWord loadDoubleWord(int position) {
+		String immediate = "";
+		for(int i = position; i < position + 8; i++)
+			immediate += memory[i].generateHex();
+		return new DoubleWord(immediate, true);
 	}
 	
-	public static HalfWord loadHalfWord(int pos) {
-		String hex = "";
-		for(int i = pos; i < pos + 2; i++)
-			hex += memory[i].generateHex();
-		return new HalfWord(hex, true);
-	}
-	
-	public static HalfWord storeHalfWord(HalfWord hw, int pos) {
-		HalfWord hWOld = loadHalfWord(pos);
-		for(int i = pos; i < pos + 2; i++)
-			memory[i] = hw.getBYTE(i-pos);
-		return hWOld;
-	}
-	
-	public static Word loadWord(int pos) {
-		String hex = "";
-		for(int i = pos; i < pos + 4; i++)
-			hex += memory[i].generateHex();
-		return new Word(hex, true);
-	}
-	
-	public static Word storeWord(HalfWord hw, int pos) {
-		Word wOld = loadWord(pos);
-		for(int i = pos; i < pos + 4; i++)
-			memory[i] = hw.getBYTE(i-pos);
-		return wOld;
-	}
-	
-	public static DoubleWord loadDoubleWord(int pos) {
-		String hex = "";
-		for(int i = pos; i < pos + 8; i++)
-			hex += memory[i].generateHex();
-		return new DoubleWord(hex, true);
-	}
-	
-	public static DoubleWord storeDoubleWord(DoubleWord hw, int pos) {
-		DoubleWord dWOld = loadDoubleWord(pos);
-		for(int i = pos; i < pos + 8; i++)
-			memory[i] = hw.getBYTE(i-pos);
-		return dWOld;
-	}
+	public static void storeDoubleWord(int position, DoubleWord val) {
+		for(int i = position; i < position + 8; i++)
+			memory[i] = new BYTE(val.getBYTE(i-position).generateHex());
+	}*/
 	
 }
+
+
+

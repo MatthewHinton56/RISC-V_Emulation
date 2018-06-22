@@ -1,4 +1,5 @@
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.TreeMap;
 
 
@@ -9,16 +10,26 @@ public class RegisterFile extends TreeMap<String, DoubleWord>{
 
 
 	public RegisterFile() {
-		super(new RegisterComparator());
-		for(int r = 0; r < 32; r++) {
-			super.put("x"+r, new DoubleWord());
-		}
-		this.put("pc", new DoubleWord());
+		super.put("%rax", new DoubleWord());
+		super.put("%rcx", new DoubleWord());
+		super.put("%rdx", new DoubleWord());
+		super.put("%rbx", new DoubleWord());
+		super.put("%rsp", new DoubleWord());
+		super.put("%rbp", new DoubleWord());
+		super.put("%rsi", new DoubleWord());
+		super.put("%rdi", new DoubleWord());
+		super.put("%r8", new DoubleWord());
+		super.put("%r9", new DoubleWord());
+		super.put("%r10", new DoubleWord());
+		super.put("%r11", new DoubleWord());
+		super.put("%r12", new DoubleWord());
+		super.put("%r13", new DoubleWord());
+		super.put("%r14", new DoubleWord());
 	}
 
 	public void set(String key, DoubleWord value) {
 		// TODO Auto-generated method stub
-			if(this.keySet().contains(key) && !key.equals("x0"))
+			if(this.keySet().contains(key))
 				this.put(key, value);
 		
 	}
@@ -36,24 +47,25 @@ public class RegisterFile extends TreeMap<String, DoubleWord>{
 		ret = ret.substring(0,ret.length()-2) + "}";
 		return ret;
 	}
-	
-	
-}
 
-class RegisterComparator implements Comparator<String> {
-
-	@Override
-	public int compare(String o1, String o2) {
-		if(o1.compareTo(o2) == 0)
-			return 0;
-		int letter = o1.charAt(0) - o2.charAt(0);
-		if(letter != 0)
-			return (letter < 0) ? -1 : 1;
-		int i1 = Integer.parseInt(o1.substring(1));
-		int i2 = Integer.parseInt(o2.substring(1));
-		return ((i1-i2) < 0) ? -1 : 1;
+	public void reset() {
+		super.put("%rax", new DoubleWord());
+		super.put("%rcx", new DoubleWord());
+		super.put("%rdx", new DoubleWord());
+		super.put("%rbx", new DoubleWord());
+		super.put("%rsp", new DoubleWord());
+		super.put("%rbp", new DoubleWord());
+		super.put("%rsi", new DoubleWord());
+		super.put("%rdi", new DoubleWord());
+		super.put("%r8", new DoubleWord());
+		super.put("%r9", new DoubleWord());
+		super.put("%r10", new DoubleWord());
+		super.put("%r11", new DoubleWord());
+		super.put("%r12", new DoubleWord());
+		super.put("%r13", new DoubleWord());
+		super.put("%r14", new DoubleWord());
 	}
-
+	
 	
 }
 

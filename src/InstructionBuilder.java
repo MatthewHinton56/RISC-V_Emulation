@@ -1,264 +1,60 @@
 import java.util.HashMap;
 
 public class InstructionBuilder {
-	public static final HashMap<String, String> INSTRUCTION_TO_OPCODE = new HashMap<String, String>();
-	public static final HashMap<String, String> INSTRUCTION_TO_FUNCT7 = new HashMap<String, String>();
-	static
-	{
-		generateMaps();
-	}
-	private static void generateMaps() {
-		INSTRUCTION_TO_OPCODE.put("LUI", Instruction.LUI);
 
-		INSTRUCTION_TO_OPCODE.put("LUI", Instruction.AUIPC);
-
-		INSTRUCTION_TO_OPCODE.put("JAL", Instruction.JAL);
-
-		INSTRUCTION_TO_OPCODE.put("BEQ", Instruction.BRANCH);
-		INSTRUCTION_TO_OPCODE.put("BNE", Instruction.BRANCH);
-		INSTRUCTION_TO_OPCODE.put("BLT", Instruction.BRANCH);
-		INSTRUCTION_TO_OPCODE.put("BGE", Instruction.BRANCH);
-		INSTRUCTION_TO_OPCODE.put("BLTU", Instruction.BRANCH);
-		INSTRUCTION_TO_OPCODE.put("BGEU", Instruction.BRANCH);
-
-		INSTRUCTION_TO_OPCODE.put("SB", Instruction.STORE);
-		INSTRUCTION_TO_OPCODE.put("SH", Instruction.STORE);
-		INSTRUCTION_TO_OPCODE.put("SW", Instruction.STORE);
-		INSTRUCTION_TO_OPCODE.put("SD", Instruction.STORE);
-
-		INSTRUCTION_TO_OPCODE.put("ADDI", Instruction.OP_IMM);
-		INSTRUCTION_TO_OPCODE.put("SLTI", Instruction.OP_IMM);
-		INSTRUCTION_TO_OPCODE.put("SLTIU", Instruction.OP_IMM);
-		INSTRUCTION_TO_OPCODE.put("XORI", Instruction.OP_IMM);
-		INSTRUCTION_TO_OPCODE.put("ORI", Instruction.OP_IMM);
-		INSTRUCTION_TO_OPCODE.put("ANDI", Instruction.OP_IMM);
-		INSTRUCTION_TO_OPCODE.put("SLLI", Instruction.OP_IMM);
-		INSTRUCTION_TO_OPCODE.put("SRLI", Instruction.OP_IMM);
-		INSTRUCTION_TO_OPCODE.put("SRAI", Instruction.OP_IMM);
-
-		INSTRUCTION_TO_OPCODE.put("ADD", Instruction.OP);
-		INSTRUCTION_TO_OPCODE.put("SUB", Instruction.OP);
-		INSTRUCTION_TO_OPCODE.put("SLL", Instruction.OP);
-		INSTRUCTION_TO_OPCODE.put("SLT", Instruction.OP);
-		INSTRUCTION_TO_OPCODE.put("SLTU", Instruction.OP);
-		INSTRUCTION_TO_OPCODE.put("XOR", Instruction.OP);
-		INSTRUCTION_TO_OPCODE.put("SRL", Instruction.OP);	
-		INSTRUCTION_TO_OPCODE.put("SRA", Instruction.OP);	
-		INSTRUCTION_TO_OPCODE.put("OR", Instruction.OP);
-		INSTRUCTION_TO_OPCODE.put("AND", Instruction.OP);
-
-		INSTRUCTION_TO_OPCODE.put("ADDW", Instruction.OP_32);
-		INSTRUCTION_TO_OPCODE.put("SUBW", Instruction.OP_32);
-		INSTRUCTION_TO_OPCODE.put("SLLW", Instruction.OP_32);
-		INSTRUCTION_TO_OPCODE.put("SRAW", Instruction.OP_32);
-		INSTRUCTION_TO_OPCODE.put("SRLW", Instruction.OP_32);
-
-		INSTRUCTION_TO_OPCODE.put("LB", Instruction.LOAD);
-		INSTRUCTION_TO_OPCODE.put("LH", Instruction.LOAD);
-		INSTRUCTION_TO_OPCODE.put("LW", Instruction.LOAD);
-		INSTRUCTION_TO_OPCODE.put("LD", Instruction.LOAD);
-		INSTRUCTION_TO_OPCODE.put("LBU", Instruction.LOAD);
-		INSTRUCTION_TO_OPCODE.put("LHU", Instruction.LOAD);	
-		INSTRUCTION_TO_OPCODE.put("LWU", Instruction.LOAD);
-
-		INSTRUCTION_TO_OPCODE.put("FENCE", Instruction.MISC_MEM);
-		INSTRUCTION_TO_OPCODE.put("FENCE.I", Instruction.MISC_MEM);
-
-		INSTRUCTION_TO_OPCODE.put("ECALL", Instruction.SYSYEM);
-		INSTRUCTION_TO_OPCODE.put("EBREAK", Instruction.SYSYEM);
-		INSTRUCTION_TO_OPCODE.put("CSRRW", Instruction.SYSYEM);
-		INSTRUCTION_TO_OPCODE.put("CSRRS", Instruction.SYSYEM);
-		INSTRUCTION_TO_OPCODE.put("CSRRC", Instruction.SYSYEM);
-		INSTRUCTION_TO_OPCODE.put("CSRRWI", Instruction.SYSYEM);
-		INSTRUCTION_TO_OPCODE.put("CSRRSI", Instruction.SYSYEM);	
-		INSTRUCTION_TO_OPCODE.put("CSRRCI", Instruction.SYSYEM);
-
-		INSTRUCTION_TO_OPCODE.put("JALR", Instruction.JALR);
-
-		INSTRUCTION_TO_FUNCT7.put("SUB", "0000010");
-		INSTRUCTION_TO_FUNCT7.put("SRA", "0000010");
-		INSTRUCTION_TO_FUNCT7.put("SUBW", "0000010");
-		INSTRUCTION_TO_FUNCT7.put("SRAW", "0000010");
+	public static String[] getInstruction(String instruction, String rA, String rB, DoubleWord immediate) {
+		if(Instruction.inArray(ONE_BYTE, instruction))
+			return instructionOneByte(instruction);
+		if(Instruction.inArray(TEN_BYTE, instruction))
+			return instructionTenByte(instruction, rA, rB, immediate);
+		if(Instruction.inArray(NINE_BYTE, instruction))
+			return instructionNineByte(instruction, immediate);
+		return instructionTwoByte(instruction, rA, rB);
 	}
 
-	public static String getFunct3(String function, HashMap<String, String> map) {
-		for(String funct3: map.keySet()) {
-			String instruct = map.get(funct3);
-			if(instruct.contains("|"))
-			{
-				String upper = instruct.substring(instruct.indexOf("|")+1);
-				String lower = instruct.substring(0, instruct.indexOf("|"));
-				if(function.equals(upper) || function.equals(lower))
-					return funct3;
-			} else if(instruct.contains("*")) {
-				String upper = instruct.substring(instruct.indexOf("*")+1);
-				String lower = instruct.substring(0, instruct.indexOf("*"));
-				if(function.equals(upper) || function.equals(lower))
-					return funct3;
-			} else {
-				if(instruct.equals("function"))
-					return funct3;
-			}
-		}
-		return null;
-	}
-	//Precondition: Rd, Rs1, Rs2, and imm already converted to bitStrings
-	public static boolean[] generateInstruction(String function, boolean[] Rd, boolean[] Rs1, boolean[] Rs2, boolean[] imm) {
-		String opCode = INSTRUCTION_TO_OPCODE.get(function);
-		if(Instruction.contains(Instruction.UTYPE, opCode))
-			return generateUType(opCode, Rd, imm);
-
-		else if(Instruction.contains(Instruction.UJTYPE,opCode)) 
-			return generateUJType(opCode, Rd, imm);
-
-		else if(Instruction.contains(Instruction.SBTYPE,opCode)) { 
-			String funct3 = "";
-			switch(opCode) {
-			case Instruction.BRANCH:
-				funct3 = getFunct3(function,Instruction.BRANCH_FUNCT3_TO_FUNCTION);
-				break;
-			}
-			return generateSBType(opCode, funct3, Rs1, Rs2,imm);
-
-		} else if(Instruction.contains(Instruction.STYPE,opCode)) {
-			String funct3 = "";
-			switch(opCode) {
-			case Instruction.STORE:
-				funct3 = getFunct3(function,Instruction.STORE_FUNCT3_TO_FUNCTION);
-				break;
-			}
-			return generateSType(opCode, funct3, Rs1, Rs2,imm);
-
-		} else if(Instruction.contains(Instruction.RTYPE,opCode)) {
-			String funct3 = "";
-			String funct7 = "";
-			switch(opCode) {
-			case Instruction.OP:
-				funct3 = getFunct3(function,Instruction.OP_FUNCT3_TO_FUNCTION);
-				funct7 = INSTRUCTION_TO_FUNCT7.getOrDefault(function, InstructionBuilder.DEFAULTRTYPEFUNCT7);
-				break;
-			case Instruction.OP_32:
-				funct3 = getFunct3(function,Instruction.OP_32_FUNCT3_TO_FUNCTION);
-				funct7 = INSTRUCTION_TO_FUNCT7.getOrDefault(function, InstructionBuilder.DEFAULTRTYPEFUNCT7);
-				break;
-			}
-			return generateRType(opCode, funct3,funct7, Rd, Rs1, Rs2);
-		}
-		else {
-			String funct3 = "";
-			switch(opCode) {
-			case Instruction.OP_32_IMM:
-				funct3 = getFunct3(function,Instruction.OP_32_IMM_FUNCT3_TO_FUNCTION);
-				break;
-			case Instruction.LOAD:
-				funct3 = getFunct3(function,Instruction.LOAD_FUNCT3_TO_FUNCTION);
-				break;
-			case Instruction.OP_IMM:
-				funct3 = getFunct3(function,Instruction.OP_IMM_FUNCT3_TO_FUNCTION);
-				break;
-			case Instruction.MISC_MEM:
-				funct3 = getFunct3(function,Instruction.MISC_MEM_FUNCT3_TO_FUNCTION);
-				break;
-			case Instruction.SYSYEM:
-				funct3 = getFunct3(function,Instruction.SYSYEM_FUNCT3_TO_FUNCTION);
-				break;
-			case Instruction.JALR:
-				funct3 = getFunct3(function,Instruction.JALR_FUNCT3_TO_FUNCTION);
-				break;
-			}
-			return generateRType(opCode, funct3, Rd, Rs1, Rs2, imm);
-		}
-
-	}
-
-	private static boolean[] generateRType(String opCode, String funct3, boolean[] Rd, boolean[] Rs1, boolean[] Rs2,
-			boolean[] imm) {
-		boolean[] opCodeBit = stringToBit(opCode);
-		boolean[] funct3Bit = stringToBit(funct3);
-		boolean[] instruct = new boolean[32];
-		System.arraycopy(opCodeBit, 0, instruct, 0, 7);
-		System.arraycopy(Rd, 0, instruct, 7, 5);
-		System.arraycopy(funct3Bit, 0, instruct, 12, 3);
-		System.arraycopy(Rs1, 0, instruct, 15, 5);
-		System.arraycopy(Rs2, 0, instruct, 20, 5);
-		System.arraycopy(imm, 0, instruct, 25, 7);
+	public static String getKey(HashMap<String, String> map, String val) {
+		for(String key: map.keySet())
+			if(map.get(key).equals(val))
+				return key;
 		return null;
 	}
 
-	private static boolean[] generateRType(String opCode, String funct3, String funct7, boolean[] Rd, boolean[] Rs1,
-			boolean[] Rs2) {
-		boolean[] opCodeBit = stringToBit(opCode);
-		boolean[] funct3Bit = stringToBit(funct3);
-		boolean[] funct7Bit = stringToBit(funct7);
-		boolean[] instruct = new boolean[32];
-		System.arraycopy(opCodeBit, 0, instruct, 0, 7);
-		System.arraycopy(Rd, 0, instruct, 7, 5);
-		System.arraycopy(funct3Bit, 0, instruct, 12, 3);
-		System.arraycopy(Rs1, 0, instruct, 15, 5);
-		System.arraycopy(Rs2, 0, instruct, 20, 5);
-		System.arraycopy(funct7Bit, 0, instruct, 25, 7);
-		return instruct;
+	public static String[] instructionOneByte(String instruction) {
+		String instructionArray[] = new String[1];
+		instructionArray[0] = getKey(Instruction.BYTE_TO_FUNCTION, instruction);
+		return instructionArray;
 	}
 
-	private static boolean[] generateSType(String opCode, String funct3, boolean[] Rs1, boolean[] Rs2, boolean[] imm) {
-		boolean[] opCodeBit = stringToBit(opCode);
-		boolean[] funct3Bit = stringToBit(funct3);
-		boolean[] instruct = new boolean[32];
-		System.arraycopy(opCodeBit, 0, instruct, 0, 7);
-		System.arraycopy(imm, 0, instruct, 7, 5);
-		System.arraycopy(funct3Bit, 0, instruct, 12, 3);
-		System.arraycopy(Rs1, 0, instruct, 15, 5);
-		System.arraycopy(Rs2, 0, instruct, 20, 5);
-		System.arraycopy(imm, 5, instruct, 25, 7);
-		return instruct;
+	public static String[] instructionTwoByte(String instruction, String rA, String rB) {
+		String instructionArray[] = new String[2];
+		instructionArray[0] = getKey(Instruction.BYTE_TO_FUNCTION, instruction);
+		String registerHex =  getKey(Instruction.NIBBLE_TO_REGISTER, rA) + getKey(Instruction.NIBBLE_TO_REGISTER, rB);
+		instructionArray[1] =  registerHex;
+		return instructionArray;
 	}
 
-	private static boolean[] generateSBType(String opCode, String funct3, boolean[] Rs1, boolean[] Rs2, boolean[] imm) {
-		boolean[] opCodeBit = stringToBit(opCode);
-		boolean[] funct3Bit = stringToBit(funct3);
-		boolean[] instruct = new boolean[32];
-		System.arraycopy(opCodeBit, 0, instruct, 0, 7);
-		System.arraycopy(imm, 11, instruct, 7, 1);
-		System.arraycopy(imm, 1, instruct, 8, 4);
-		System.arraycopy(funct3Bit, 0, instruct, 12, 3);
-		System.arraycopy(Rs1, 0, instruct, 15, 5);
-		System.arraycopy(Rs2, 0, instruct, 20, 5);
-		System.arraycopy(imm, 5, instruct, 25, 6);
-		System.arraycopy(imm, 12, instruct, 31, 1);
-		return instruct;
-	}
-
-	private static boolean[] generateUJType(String opCode, boolean[] Rd, boolean[] imm) {
-		boolean[] opCodeBit = stringToBit(opCode);
-		boolean[] instruct = new boolean[32];
-		System.arraycopy(opCodeBit, 0, instruct, 0, 7);
-		System.arraycopy(Rd, 0, instruct, 7, 5);
-		System.arraycopy(imm, 12, instruct, 12, 8);
-		System.arraycopy(imm, 11, instruct, 20, 1);
-		System.arraycopy(imm, 1, instruct, 21, 10);
-		System.arraycopy(imm, 20, instruct, 31, 1);
-		return instruct;
-	}
-
-	private static boolean[] generateUType(String opCode, boolean[] Rd, boolean[] imm) {
-		boolean[] opCodeBit = stringToBit(opCode);
-		boolean[] instruct = new boolean[32];
-		System.arraycopy(opCodeBit, 0, instruct, 0, 7);
-		System.arraycopy(Rd, 0, instruct, 7, 5);
-		System.arraycopy(imm, 0, instruct, 12, 20);
-		return instruct;
-
-	}
-	public static boolean[] stringToBit(String s) {
-		boolean[] array = new boolean[s.length()];
-		for(int i = 0; i < s.length(); i++) {
-			if(s.charAt(i) == '1')
-				array[i] = true;
-			else
-				array[i] = false;
+	public static String[] instructionNineByte(String instruction, DoubleWord immediate) {
+		String instructionArray[] = new String[9];
+		instructionArray[0] = getKey(Instruction.BYTE_TO_FUNCTION, instruction);
+		for(int pos = 1; pos < 9; pos++) {
+			instructionArray[pos] = immediate.getBYTE(pos-1).generateHex(); 
 		}
-		return array;
+		return instructionArray;
 	}
 
-	public static final String DEFAULTRTYPEFUNCT7  = "0000000";
+	public static String[] instructionTenByte(String instruction, String rA, String rB, DoubleWord immediate) {
+		String instructionArray[] = new String[10];
+		instructionArray[0] = getKey(Instruction.BYTE_TO_FUNCTION, instruction);
+		String registerHex =  getKey(Instruction.NIBBLE_TO_REGISTER, rA) + getKey(Instruction.NIBBLE_TO_REGISTER, rB);
+		instructionArray[1] =  registerHex;
+		for(int pos = 2; pos <= 9; pos++) {
+			instructionArray[pos] = immediate.getBYTE(pos-2).generateHex(); 
+		}
+		return instructionArray;
+	}
+
+	public static final String[] ONE_BYTE = {"halt", "nop", "ret"};
+	public static final String[] NINE_BYTE = {"call", "jmp", "jl", "jg", "je", "jne", "jle", "jge"};
+	public static final String[] TEN_BYTE = {"irmovq", "mrmovq", "rmmovq"};
+
 }

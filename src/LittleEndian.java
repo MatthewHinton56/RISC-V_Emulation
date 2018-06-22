@@ -60,10 +60,28 @@ public abstract class LittleEndian {
 	}
 	
 	public String toString() {
-		return this.generateHex();
+		String s = this.generateHex();
+		return s;
 	}
 	
+	public String displayToString() {
+		String s = this.generateHex();
+		int pos = 0;
+		int firstNonZero = -1;
+		while(pos < s.length() && firstNonZero == -1) {
+			if(s.charAt(pos) != '0')
+				firstNonZero = pos;
+			pos++;	
+		}
+		if(firstNonZero == -1)
+			firstNonZero = s.length();
+		s = s.substring(firstNonZero);
+		return (s.length() == 0) ? "0" : s;
+	}
+	
+	
 	public static String LEHexFixer(String hex, int requiredSize) {
+		requiredSize = requiredSize/4;
 		char c = hex.charAt(hex.length()-2);
 		boolean sign = (c >= 'A' && c <= 'F');
 		String signExtension = (sign) ? "F" : "0"; 
@@ -79,6 +97,7 @@ public abstract class LittleEndian {
 	}
 	
 	public static String hexFixer(String hex, int requiredSize) {
+		requiredSize = requiredSize/4;
 		char c = hex.charAt(0);
 		boolean sign = (c >= 'A' && c <= 'F');
 		String signExtension = (sign) ? "F" : "0"; 
