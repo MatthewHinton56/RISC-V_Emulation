@@ -179,6 +179,7 @@ public class Processor {
 			for(long l: Compiler.COMPILED_INSTRUCTIONS.keySet())
 				Memory.storeInstruction(l, Compiler.COMPILED_INSTRUCTIONS.get(l));
 			status = "AOK";
+			registerFile.reset();
 		} else {
 			status = "HLT";
 		}
