@@ -81,7 +81,7 @@ public class YOTab extends Tab {
 			row++;
 		}
 		registerDisplay.add(new TextField("PC"), 0, row);
-		String PC = (Processor.PC != null) ? "0x"+Processor.PC.displayToString() : "N/A";
+		/*String PC = (Processor.PC != null) ? "0x"+Processor.PC.displayToString() : "N/A";
 		registerDisplay.add(new TextField(PC), 1, row);
 		row++;
 		registerDisplay.add(new TextField("ZF"), 0, row);
@@ -94,7 +94,7 @@ public class YOTab extends Tab {
 		row++;
 		registerDisplay.add(new TextField("OF"), 0, row);
 		String OF = (ALU.OF()) ? "1" : "0";
-		registerDisplay.add(new TextField("0x"+OF), 1, row);
+		registerDisplay.add(new TextField("0x"+OF), 1, row);*/
 	}
 	
 	

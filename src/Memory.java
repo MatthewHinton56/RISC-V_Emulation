@@ -4,22 +4,22 @@ import java.util.HashSet;
 public class Memory {
 	public static final HashMap<Long,BYTE> memory = new HashMap<Long,BYTE>();
 	
-	public static BYTE[] getInstruction(long position) {
-		BYTE instructionArray[] = new BYTE[10];
-		for(Long i = position; i < position + 10; i++) {
-			BYTE instruct = memory.get(i);
-			if(instruct == null)
-				memory.put(i, BYTE.randomBYTE());
-			instructionArray[(int) (i-position)] =  memory.get(i);
-		}
-		return instructionArray;
-	}
+	//public static BYTE[] getInstruction(long position) {
+	//	BYTE instructionArray[] = new BYTE[10];
+	//	for(Long i = position; i < position + 10; i++) {
+	//		BYTE instruct = memory.get(i);
+	//		if(instruct == null)
+	//			memory.put(i, BYTE.randomBYTE());
+	//		instructionArray[(int) (i-position)] =  memory.get(i);
+	//	}
+	//	return instructionArray;
+	//}
 	
 	public static DoubleWord loadDoubleWord(long position) {
 		String immediate = "";
 		for(long i = position; i < position + 8; i++) {
 			if(memory.get(i).generateHex() == null) {
-				memory.put(i, BYTE.randomBYTE());
+				memory.put(i, BYTE.ZERO_BYTE);
 			}
 			immediate += memory.get(i).generateHex();
 		}
@@ -31,11 +31,59 @@ public class Memory {
 		for(long i = position; i < position + 8; i++)
 			memory.put(i, new BYTE(val.getBYTE((int) (i-position)).generateHex()));
 	}
-	
-	public static void storeInstruction(long position, String[] instruction) {
-		for(long i = position; i < position + instruction.length; i++)
-			memory.put(i, new BYTE(instruction[((int) (i-position))]));
+
+	public static Word loadWord(long position) {
+		String immediate = "";
+		for(long i = position; i < position + 4; i++) {
+			if(memory.get(i).generateHex() == null) {
+				memory.put(i, BYTE.ZERO_BYTE);
+			}
+			immediate += memory.get(i).generateHex();
+		}
+		
+		return new Word(immediate, true);
 	}
+	
+	public static HalfWord loadHalfWord(long position) {
+		String immediate = "";
+		for(long i = position; i < position + 2; i++) {
+			if(memory.get(i).generateHex() == null) {
+				memory.put(i, BYTE.ZERO_BYTE);
+			}
+			immediate += memory.get(i).generateHex();
+		}
+		
+		return new HalfWord(immediate, true);
+	}
+	
+	public static BYTE loadBYTE(long position) {
+		String immediate = "";
+			if(memory.get(position).generateHex() == null) {
+				memory.put(position, BYTE.ZERO_BYTE);
+			}
+			immediate += memory.get(position).generateHex();
+		
+		return new BYTE(immediate);
+	}
+	
+	public static void storeWord(long position, Word val) {
+		for(long i = position; i < position + 4; i++)
+			memory.put(i, new BYTE(val.getBYTE((int) (i-position)).generateHex()));
+	}
+	
+	public static void storeHalfWord(long position, HalfWord val) {
+		for(long i = position; i < position + 2; i++)
+			memory.put(i, new BYTE(val.getBYTE((int) (i-position)).generateHex()));
+	}
+	
+	public static void storeBYTE(long position, BYTE val) {
+		memory.put(position, val);
+	}
+	
+	//public static void storeInstruction(long position, String[] instruction) {
+	//	for(long i = position; i < position + instruction.length; i++)
+	//		memory.put(i, new BYTE(instruction[((int) (i-position))]));
+	//}
 	/*public static final BYTE[] memory = new BYTE[8192];
 	public static final HashSet<Integer> memoryInUse = new HashSet<Integer>();
 	static {

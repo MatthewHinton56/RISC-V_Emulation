@@ -3,6 +3,7 @@ import java.util.Arrays;
 public class BYTE extends LittleEndian {
 
 	public static final int BYTESIZE = 8;
+	public static final BYTE ZERO_BYTE = new BYTE("00");
 	
 	public BYTE(boolean[] bitArray) {
 		super(bitArray);
