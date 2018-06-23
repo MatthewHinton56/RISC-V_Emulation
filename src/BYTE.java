@@ -24,5 +24,11 @@ public class BYTE extends LittleEndian {
 				b.bitArray[pos] = true;
 		return b;
 	}
+
+	@Override
+	public BYTE add(LittleEndian addends) {
+		boolean[] out = ALU.IADD(this.bitArray, addends.bitArray);
+		return new BYTE(out);
+	}
 	
 }

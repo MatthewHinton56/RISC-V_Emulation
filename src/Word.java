@@ -51,5 +51,11 @@ public class Word extends LittleEndian{
 		System.arraycopy(this.bitArray, pos, bitArray, 0, HalfWord.HALFWORDSIZE);
 		return new HalfWord(bitArray);
 	}
+	
+	@Override
+	public Word add(LittleEndian addends) {
+		boolean[] out = ALU.IADD(this.bitArray, addends.bitArray);
+		return new Word(out);
+	}
 
 }

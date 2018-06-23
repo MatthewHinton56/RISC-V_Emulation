@@ -113,6 +113,13 @@ public class ALU {
 			return CF;
 		return SF ^ OF;
 	}
+	
+	public static boolean GreaterThanOrEqual(boolean[] a, boolean[] b, boolean U) {
+		SUB(a,b);
+		if(U)
+			return !CF;
+		return !(SF ^ OF);
+	}
 
 
 	public static boolean[] ADDFOUR(boolean[] a) {

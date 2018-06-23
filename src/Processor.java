@@ -11,6 +11,7 @@ public class Processor {
 		Word nextInstruction = Memory.loadWord(registerFile.get("pc").calculateValueSigned());
 		boolean[] instructionArray = nextInstruction.bitArray;
 		currentInstruction = new Instruction(instructionArray);
+		currentInstruction.valP = registerFile.get("pc").addFour();
 	}
 
 	public static void decode() {
@@ -19,38 +20,128 @@ public class Processor {
 	}
 
 	public static void execute() {
+		DoubleWord valE = null;
+		boolean[] constant = null;
 		switch(currentInstruction.instruction) {
 		case "ADD": 
-			DoubleWord valE = new DoubleWord(ALU.ADD(currentInstruction.RS1Val.bitArray, currentInstruction.RS2Val.bitArray));
+			valE = currentInstruction.RS1Val.add(currentInstruction.RS2Val);
 			currentInstruction.EVal = valE; 
 			break;
-		}
-
-
-		DoubleWord newPC = new DoubleWord(ALU.ADDFOUR(registerFile.get("pc").bitArray));
-		registerFile.set("pc", newPC);
-	}
-
-	public static void memory() {
-		if(currentInstruction.memory) {
+		case "SUB":
+			valE = currentInstruction.RS1Val.subtract(currentInstruction.RS2Val);
+			currentInstruction.EVal = valE; 
+			break;
+		case "AND":
+			valE = currentInstruction.RS1Val.and(currentInstruction.RS2Val);
+			break;
+		case "OR":
+			valE = currentInstruction.RS1Val.or(currentInstruction.RS2Val);
+			break;
+		case "XOR":
+			valE = currentInstruction.RS1Val.xor(currentInstruction.RS2Val);
+			break;	
+		case "XORI":
+			constant = new boolean[32];
+			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
+			valE = new DoubleWord(ALU.XOR(currentInstruction.RS1Val.bitArray,constant));
+			currentInstruction.EVal = valE;
+			break;
+		case "ORI":
+			constant = new boolean[32];
+			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
+			valE = new DoubleWord(ALU.OR(currentInstruction.RS1Val.bitArray,constant));
+			currentInstruction.EVal = valE; 
+			break;
+		case "ANDI":
+			constant = new boolean[32];
+			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
+			valE = new DoubleWord(ALU.AND(currentInstruction.RS1Val.bitArray,constant));
+			currentInstruction.EVal = valE; 
+			break;
+		default:
+			constant = new boolean[32];
+			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
+			valE = new DoubleWord(ALU.IADD(currentInstruction.RS1Val.bitArray,constant));
+			currentInstruction.EVal = valE; 
+			break;		
 			
 		}
 	}
 
-	public static void writeBack() {
-		if(currentInstruction.memory)
-			registerFile.set(currentInstruction.Rd, currentInstruction.MVal);
-		else
-		registerFile.set(currentInstruction.Rd, currentInstruction.EVal);
+	public static void memory() {
+		switch(currentInstruction.instruction) {
+		case "LD":
+			currentInstruction.MVal = Memory.loadDoubleWord(currentInstruction.EVal.calculateValueSigned());
+			break;
+		case "SD": 
+			Memory.storeDoubleWord(currentInstruction.EVal.calculateValueSigned(), currentInstruction.RS2Val);
+			break;
+		case "LW":
+			currentInstruction.MVal = new  DoubleWord(Memory.loadWord(currentInstruction.EVal.calculateValueSigned()), true);
+			break;
+		case "LWU":
+			currentInstruction.MVal = new  DoubleWord(Memory.loadWord(currentInstruction.EVal.calculateValueSigned()), false);
+			break;
+		case "SW": 
+			Memory.storeWord(currentInstruction.EVal.calculateValueSigned(), currentInstruction.RS2Val.getWord(0));
+			break;
+		case "LH":
+			currentInstruction.MVal = new  DoubleWord(Memory.loadHalfWord(currentInstruction.EVal.calculateValueSigned()), true);
+			break;
+		case "LHU":
+			currentInstruction.MVal = new  DoubleWord(Memory.loadHalfWord(currentInstruction.EVal.calculateValueSigned()), false);
+			break;
+		case "SH": 
+			Memory.storeHalfWord(currentInstruction.EVal.calculateValueSigned(), currentInstruction.RS2Val.getHalfWord(0));
+			break;	
+		case "LB":
+			currentInstruction.MVal = new  DoubleWord(Memory.loadBYTE(currentInstruction.EVal.calculateValueSigned()), true);
+			break;
+		case "LBU":
+			currentInstruction.MVal = new  DoubleWord(Memory.loadBYTE(currentInstruction.EVal.calculateValueSigned()), false);
+			break;
+		case "SB": 
+			Memory.storeBYTE(currentInstruction.EVal.calculateValueSigned(), currentInstruction.RS2Val.getBYTE(0));
+			break;		
+
+		}
 	}
-	
+
+	public static void writeBack() {
+		switch(currentInstruction.instruction) {
+		case "LD":
+		case "LW":
+		case "LWU":
+		case "LH":
+		case "LHU":
+		case "LB":
+		case "LBU":	
+			registerFile.set(currentInstruction.Rd, currentInstruction.MVal);
+			break;
+		case "ADDI":
+		case "SUB":
+		case "ADD":
+		case "AND":
+		case "XOR":
+		case "OR":	
+			registerFile.set(currentInstruction.Rd, currentInstruction.EVal);
+			break;
+		}
+	}
+
 	//Bare Bones
 	public static void setUp(DoubleWord start) {
 		registerFile.set("pc", start);
 	}
 
-	public static void pc() {}
-	
+	public static void pc() {
+		switch(currentInstruction.instruction) {
+
+		default:
+			registerFile.set("pc", currentInstruction.valP);
+		}
+	}
+
 
 
 

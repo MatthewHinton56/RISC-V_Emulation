@@ -54,5 +54,44 @@ public class DoubleWord extends LittleEndian{
 	public DoubleWord(long l) {
 		super(ALU.longToBitArray(l, DOUBLEWORDSIZE));
 	}
-		
+	
+	@Override
+	public DoubleWord add(LittleEndian addends) {
+		boolean[] out = ALU.IADD(this.bitArray, addends.bitArray);
+		return new DoubleWord(out);
+	}
+	
+	public DoubleWord subtract(DoubleWord minuend) {
+		boolean[] out = ALU.SUB(this.bitArray, minuend.bitArray);
+		return new DoubleWord(out);
+	}
+
+	public DoubleWord addFour() {
+		return add(FOUR);
+	}
+	public static final DoubleWord FOUR = new DoubleWord(4);	
+	
+	public DoubleWord(LittleEndian input, boolean signed) {
+		super(DOUBLEWORDSIZE);
+		boolean[] tempBitArray = ALU.signExtension(input.bitArray, signed, DOUBLEWORDSIZE);
+		System.arraycopy(tempBitArray, 0, bitArray, 0, 64);
+	}
+	
+	public DoubleWord and(DoubleWord andend) {
+		boolean[] out = ALU.AND(this.bitArray, andend.bitArray);
+		return new DoubleWord(out);
+	}
+	
+	public DoubleWord or(DoubleWord andend) {
+		boolean[] out = ALU.OR(this.bitArray, andend.bitArray);
+		return new DoubleWord(out);
+	}
+	
+	public DoubleWord xor(DoubleWord andend) {
+		boolean[] out = ALU.XOR(this.bitArray, andend.bitArray);
+		return new DoubleWord(out);
+	}
+	
+	
+	
 }

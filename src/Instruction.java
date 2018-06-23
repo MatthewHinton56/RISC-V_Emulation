@@ -11,7 +11,8 @@ public class Instruction {
 
 	boolean[] immediate;
 	String Rd, Rs1, Rs2;
-	DoubleWord RS1Val, RS2Val, EVal, MVal;
+	DoubleWord RS1Val, RS2Val, EVal, MVal, valP;
+	boolean conditionMet;
 	//0 - RS1Val, 1 - RS2Val, 2 - EVal, 3 - MVal
 	String type, instruction;
 	boolean memory;
@@ -33,6 +34,7 @@ public class Instruction {
 		else
 			generateIType(instructionBitEncoding, opCode);
 		memory = (opCode.equals(STORE) || opCode.equals(LOAD));
+		conditionMet = true;
 
 	}
 	private void generateIType(boolean[] instructionBitEncoding, String opCode) {
