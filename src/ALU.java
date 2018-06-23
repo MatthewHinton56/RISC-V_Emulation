@@ -198,6 +198,14 @@ public class ALU {
 		return c;
 	}
 
+	public static int bitArrayToInt(boolean[] bitArray) {
+		int val = 0;
+		for(int i = 0; i < bitArray.length; i++) {
+			val += (bitArray[0]) ? (int)Math.pow(2, i) : 0;
+		}
+		return val;
+	}
+	
 
 	public static void main(String[] args) {
 		Scanner scan = new Scanner(System.in);

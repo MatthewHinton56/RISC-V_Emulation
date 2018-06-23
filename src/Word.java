@@ -58,4 +58,33 @@ public class Word extends LittleEndian{
 		return new Word(out);
 	}
 
+	public Word subtract(Word minuend) {
+		boolean[] out = ALU.SUB(this.bitArray, minuend.bitArray);
+		return new Word(out);
+	}
+	
+	public Word shiftLeft(Word shamt) {
+		int shamtI = (int)(Math.abs(shamt.calculateValueSigned()%32));
+		boolean[] c = ALU.shiftLeft(this.bitArray, shamtI);
+		return new Word(c);
+	}
+	
+	public Word shiftRight(Word shamt, boolean logical) {
+		int shamtI = (int)(Math.abs(shamt.calculateValueSigned()%32));
+		boolean[] c = ALU.shiftRight(this.bitArray, shamtI, logical);
+		return new Word(c);
+	}
+	
+	public Word shiftLeft(boolean[] shamt) {
+		int shamtI = ALU.bitArrayToInt(shamt);
+		boolean[] c = ALU.shiftLeft(this.bitArray, shamtI);
+		return new Word(c);
+	}
+	
+	public Word shiftRight(boolean[] shamt, boolean logical) {
+		int shamtI = ALU.bitArrayToInt(shamt);
+		boolean[] c = ALU.shiftRight(this.bitArray, shamtI, logical);
+		return new Word(c);
+	}
+
 }

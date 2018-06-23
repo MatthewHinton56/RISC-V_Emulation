@@ -91,7 +91,34 @@ public class DoubleWord extends LittleEndian{
 		boolean[] out = ALU.XOR(this.bitArray, andend.bitArray);
 		return new DoubleWord(out);
 	}
+
+	public boolean lessThan(DoubleWord b, boolean unsigned) {
+		// TODO Auto-generated method stub
+		return ALU.LessThan(this.bitArray, b.bitArray, unsigned);
+	}
 	
+	public DoubleWord shiftLeft(DoubleWord shamt) {
+		int shamtI = (int)(Math.abs(shamt.calculateValueSigned()%64));
+		boolean[] c = ALU.shiftLeft(this.bitArray, shamtI);
+		return new DoubleWord(c);
+	}
 	
+	public DoubleWord shiftRight(DoubleWord shamt, boolean logical) {
+		int shamtI = (int)(Math.abs(shamt.calculateValueSigned()%64));
+		boolean[] c = ALU.shiftRight(this.bitArray, shamtI, logical);
+		return new DoubleWord(c);
+	}
+	
+	public DoubleWord shiftLeft(boolean[] shamt) {
+		int shamtI = ALU.bitArrayToInt(shamt);
+		boolean[] c = ALU.shiftLeft(this.bitArray, shamtI);
+		return new DoubleWord(c);
+	}
+	
+	public DoubleWord shiftRight(boolean[] shamt, boolean logical) {
+		int shamtI = ALU.bitArrayToInt(shamt);
+		boolean[] c = ALU.shiftRight(this.bitArray, shamtI, logical);
+		return new DoubleWord(c);
+	}
 	
 }
