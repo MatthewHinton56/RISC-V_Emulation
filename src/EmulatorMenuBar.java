@@ -30,13 +30,13 @@ public class EmulatorMenuBar extends MenuBar {
 		        mainStage.yotab = null;
 		        TextInputDialog dialog = new TextInputDialog("file");
 		        dialog.setTitle("File Name");
-		        dialog.setHeaderText(".ys appended for you");
+		        dialog.setHeaderText(".s appended for you");
 		        dialog.setContentText("Please enter File Name:");
 
 		        // Traditional way to get the response value.
 		        Optional<String> result = dialog.showAndWait();
 		        if (result.isPresent()){
-		            	mainStage.ystab = new YSTab(mainStage.pane,result.get(),"",mainStage);
+		            	mainStage.ystab = new YSTab(mainStage.pane,result.get() + ".s","",mainStage);
 		            	mainStage.pane.getTabs().add(mainStage.ystab);
 		        }
 		    }
@@ -67,7 +67,7 @@ public class EmulatorMenuBar extends MenuBar {
 		    	FileChooser fileChooser = new FileChooser();
 		    	 fileChooser.setTitle("Open Resource File");
 		    	 fileChooser.getExtensionFilters().addAll(
-		    	         new ExtensionFilter("Y86 - Assembler", "*.ys"));
+		    	         new ExtensionFilter("RISCV - Assembler", "*.s"));
 		    	 File selectedFile = fileChooser.showOpenDialog(null);
 
 		        // Traditional way to get the response value.

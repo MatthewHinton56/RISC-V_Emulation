@@ -8,7 +8,7 @@ import java.util.Scanner;
 public class Compiler {
 
 	public static final HashMap<Long, String[]> COMPILED_INSTRUCTIONS =  new HashMap<Long, String[]>(); 
-	public static final HashMap<Long, DoubleWord> COMPILED_CONSTANTS = new HashMap<Long, DoubleWord>(); 
+	public static final HashMap<Long, LittleEndian> COMPILED_CONSTANTS = new HashMap<Long, LittleEndian>(); 
 	public static String start_address;
 	public static boolean compiled;
 
@@ -18,12 +18,221 @@ public class Compiler {
 		COMPILED_INSTRUCTIONS.clear();
 		COMPILED_CONSTANTS.clear();
 		start_address = inputLines.get(0).address;
+		start_address = inputLines.get(0).address;
 		String output = "";
-
-
-
+		for(Line l: inputLines) {
+			output += "0x" + l.address +": ";
+			String firstWord = l.splitLine[0];
+			if(firstWord.startsWith("."))
+				output += assemblerDirectiveProcessing(l,firstWord);
+			else if(firstWord.contains(":")) 
+			{
+				
+			}
+			else { 
+				String opCode = InstructionBuilder.INSTRUCTION_TO_OPCODE.get(firstWord.toUpperCase());
+				if(Instruction.contains(Instruction.RTYPE, opCode))
+					output += rType(l,firstWord.toUpperCase());
+				else if(opCode.equals(Instruction.OP_32_IMM) || opCode.equals(Instruction.OP_IMM))
+					output += iTypeType1(l,firstWord.toUpperCase());
+				else if(Instruction.contains(Instruction.UTYPE, opCode) || Instruction.contains(Instruction.UJTYPE, opCode))	
+					output += uAndUJType(l,firstWord.toUpperCase());
+				else if(opCode.equals(Instruction.JALR) || opCode.equals(Instruction.LOAD) || opCode.equals(Instruction.STORE))
+					output += memType(l, firstWord.toUpperCase());
+				else if(opCode.equals(Instruction.BRANCH))
+					output += branchType(l, firstWord.toUpperCase());
+			}
+			output+= " "+l.line+"\n";
+		}
 		return output;
 	}
+
+	private static String branchType(Line l, String instruction) {
+		String rs1 = l.splitLine[1].substring(1);
+		String rs2 = l.splitLine[2].substring(1);
+		String val;
+		if(TAG_TO_ADDRESS.containsKey(l.splitLine[3])) {
+			val = (Long.parseLong(TAG_TO_ADDRESS.get(l.splitLine[3])) - Long.parseLong(l.address,16)) + "";
+		} else if(l.splitLine[3].contains("0x")) {
+			val = l.splitLine[3].substring(2);
+		} else {
+			val = l.splitLine[3];
+		}
+
+		String imm = Long.parseLong(val)%((long)(Math.pow(2, 12))) +"";
+		boolean[] rs1Array = ALU.longToBitArray(Long.parseLong(rs1), 5);
+		boolean[] rs2Array = ALU.longToBitArray(Long.parseLong(rs2), 5);
+		boolean[] immArray = ALU.longToBitArray(Long.parseLong(imm), 13);
+		immArray[0] = false;
+		if(instruction.toUpperCase().startsWith("SRAI"))
+			immArray[10] = true;
+		boolean[] instructionArray = InstructionBuilder.generateInstruction(instruction, null, rs1Array, rs2Array, immArray);
+		System.out.println(instructionArray);
+		Word w = new Word(instructionArray);
+		COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
+		return w.generateHex();
+	}
+
+	private static String memType(Line l, String instruction) {
+		String rDRs2 = l.splitLine[1];
+		String rs1 = l.splitLine[2].substring(l.splitLine[2].indexOf("(")+1, l.splitLine[2].indexOf(")"));
+		String val = l.splitLine[2].substring(0, l.splitLine[2].indexOf("("));
+		if(TAG_TO_ADDRESS.containsKey(val)) {
+			val = (Long.parseLong(TAG_TO_ADDRESS.get(val)) - Long.parseLong(l.address,16)) + "";
+		} else if(val.contains("0x")) {
+			val = val.substring(2);
+		} else if(val.length() == 0) {
+			val = "0";
+		}
+		boolean[] rDRS2Array = ALU.longToBitArray(Long.parseLong(rDRs2), 5);
+		boolean[] rs1Array = ALU.longToBitArray(Long.parseLong(rs1), 5);
+		String imm = Long.parseLong(val)%((long)(Math.pow(2, 12)))  +"";
+		boolean[] immArray = ALU.longToBitArray(Long.parseLong(imm), 12);
+		boolean[] instructionArray;
+		switch(InstructionBuilder.INSTRUCTION_TO_OPCODE.get(instruction)) {
+		case Instruction.LOAD:
+		case Instruction.JALR:
+			 instructionArray = InstructionBuilder.generateInstruction(instruction, rDRS2Array, rs1Array, null, immArray);
+			break;
+		default:
+			instructionArray = InstructionBuilder.generateInstruction(instruction, null, rs1Array, rDRS2Array, immArray);
+			break;
+		}
+		Word w = new Word(instructionArray);
+		COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
+		return w.generateHex();
+	}
+
+	static String uAndUJType(Line l, String instruction) {
+		String rD = l.splitLine[1].substring(1);
+		String val;
+		if(TAG_TO_ADDRESS.containsKey(l.splitLine[3])) {
+			val = (Long.parseLong(TAG_TO_ADDRESS.get(l.splitLine[3])) - Long.parseLong(l.address,16)) + "";
+		} else if(l.splitLine[3].contains("0x")) {
+			val = l.splitLine[3].substring(2);
+		} else {
+			val = l.splitLine[3];
+		}
+
+		boolean[] rDArray = ALU.longToBitArray(Long.parseLong(rD), 5);
+		boolean[] immArray;
+		String imm ;
+		switch(InstructionBuilder.INSTRUCTION_TO_OPCODE.get(instruction)) {
+
+		case Instruction.AUIPC:
+		case Instruction.LUI:
+			imm = Long.parseLong(val)%((long)(Math.pow(2, 20)))  +"";
+			immArray = ALU.longToBitArray(Long.parseLong(imm), 20);
+			break;
+		default:
+			imm = Long.parseLong(val)%((long)(Math.pow(2, 21)))  +"";
+			immArray = ALU.longToBitArray(Long.parseLong(imm), 21);
+			immArray[0] = false;
+			break;
+		}
+		boolean[] instructionArray = InstructionBuilder.generateInstruction(instruction, rDArray, null, null, immArray);
+		Word w = new Word(instructionArray);
+		COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
+		return w.generateHex();
+	}
+
+
+
+
+
+
+	private static String iTypeType1(Line l, String instruction) {
+		String rD = l.splitLine[1].substring(1);
+		String rs1 = l.splitLine[2].substring(1);
+		String val;
+		if(TAG_TO_ADDRESS.containsKey(l.splitLine[3])) {
+			val = (Long.parseLong(TAG_TO_ADDRESS.get(l.splitLine[3])) - Long.parseLong(l.address,16)) + "";
+		} else if(l.splitLine[3].contains("0x")) {
+			val = l.splitLine[3].substring(2);
+		} else {
+			val = l.splitLine[3];
+		}
+
+		String imm = Long.parseLong(val)%((long)(Math.pow(2, 12))) +"";
+		boolean[] rDArray = ALU.longToBitArray(Long.parseLong(rD), 5);
+		boolean[] rs1Array = ALU.longToBitArray(Long.parseLong(rs1), 5);
+		boolean[] immArray = ALU.longToBitArray(Long.parseLong(imm), 12);
+		if(instruction.toUpperCase().startsWith("SRAI"))
+			immArray[10] = true;
+		boolean[] instructionArray = InstructionBuilder.generateInstruction(instruction, rDArray, rs1Array, null, immArray);
+		System.out.println(instructionArray);
+		Word w = new Word(instructionArray);
+		COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
+		return w.generateHex();
+	}
+
+
+
+
+
+
+	private static String rType(Line l, String instruction) {
+		String rD = l.splitLine[1].substring(1);
+		String rs1 = l.splitLine[2].substring(1);
+		String rs2 = l.splitLine[3].substring(1);
+		boolean[] rDArray = ALU.longToBitArray(Long.parseLong(rD), 5);
+		boolean[] rs1Array = ALU.longToBitArray(Long.parseLong(rs1), 5);
+		boolean[] rs2Array = ALU.longToBitArray(Long.parseLong(rs2), 5);
+		boolean[] instructionArray = InstructionBuilder.generateInstruction(instruction, rDArray, rs1Array, rs2Array, null);
+		Word w = new Word(instructionArray);
+		COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
+		return w.generateHex();
+	}
+
+
+
+
+
+
+	private static String assemblerDirectiveProcessing(Line l, String directive) {
+		String output = "";
+		String val;
+		if(TAG_TO_ADDRESS.containsKey(l.splitLine[1])) {
+			val = (Long.parseLong(TAG_TO_ADDRESS.get(l.splitLine[1])) - Long.parseLong(l.address,16)) + "";
+		} else if(l.splitLine[1].contains("0x")) {
+			val = l.splitLine[1].substring(2);
+		} else {
+			val = l.splitLine[1];
+		}
+
+
+		switch(directive) {
+		case BYTE:
+			BYTE b = new BYTE(val);
+			output += b.generateHexLE();
+			COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), b);
+			break;
+		case TWOBYTE:
+		case SHORT:
+		case HALF:
+			HalfWord hw = new HalfWord(val,false);
+			output += hw.generateHexLE();
+			COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), hw);
+			break;
+		case FOURBYTE:
+		case LONG:
+		case WORD:
+			Word w = new Word(val,false);
+			output += w.generateHexLE();
+			COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
+			break;
+		default:
+			DoubleWord dw = new DoubleWord(TAG_TO_ADDRESS.get(l.splitLine[1]),false);
+			output += dw.generateHexLE();
+			COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), dw);
+			break;		
+		}
+		return output;
+	}
+
+
+
+
 
 
 	//creates a map of tags assigned with an address
@@ -154,15 +363,15 @@ public class Compiler {
 	//valid assembler tags
 	public static final String ALIGN = ".align";
 	public static final String BYTE = ".byte";
-	
+
 	public static final String TWOBYTE = ".2byte";
 	public static final String HALF = ".half";
 	public static final String SHORT = ".short";
-	
+
 	public static final String FOURBYTE = ".4byte";
 	public static final String WORD = ".word";
 	public static final String LONG = ".long";
-	
+
 	public static final String EIGHTBYTE = ".8byte";
 	public static final String DWORD = ".dword";
 	public static final String QUAD = ".quad";

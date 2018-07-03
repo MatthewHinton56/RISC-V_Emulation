@@ -1,3 +1,4 @@
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class Instruction {
@@ -35,7 +36,6 @@ public class Instruction {
 			generateIType(instructionBitEncoding, opCode);
 		memory = (opCode.equals(STORE) || opCode.equals(LOAD));
 		conditionMet = true;
-
 	}
 	private void generateIType(boolean[] instructionBitEncoding, String opCode) {
 		immediate = new boolean[12];
@@ -62,13 +62,16 @@ public class Instruction {
 			instruction = JALR_FUNCT3_TO_FUNCTION.get(funct3);
 			break;
 		}
+		if(instruction.contains("|"))
+			instruction = (!instructionBitEncoding[31]) ? instruction.substring(0, instruction.indexOf("|")) : instruction.substring(instruction.indexOf("|")+1);
 		String Rd = getRegister(7,11,instructionBitEncoding); 
+		System.out.println(Rd);
 		String Rs1 = getRegister(15,19,instructionBitEncoding);
 		this.Rd = Rd;
 		this.Rs1 = Rs1;
 		this.Rs2 = "x0";
 	}
-	
+
 	private void generateRType(boolean[] instructionBitEncoding, String opCode) {
 		type = "R";
 		String funct3 = bitToString(12,14,instructionBitEncoding);
@@ -79,6 +82,8 @@ public class Instruction {
 		case OP_32:
 			instruction = OP_32_FUNCT3_TO_FUNCTION.get(funct3);
 		}
+		if(instruction.contains("|"))
+			instruction = (!instructionBitEncoding[31]) ? instruction.substring(0, instruction.indexOf("|")) : instruction.substring(instruction.indexOf("|")+1);
 		String Rd = getRegister(7,11,instructionBitEncoding); 
 		String Rs1 = getRegister(15,19,instructionBitEncoding);
 		String Rs2 = getRegister(20,24,instructionBitEncoding);
@@ -86,7 +91,7 @@ public class Instruction {
 		this.Rs1 = Rs1;
 		this.Rs2 = Rs2;
 	}
-	
+
 	private void generateSType(boolean[] instructionBitEncoding, String opCode) {
 		immediate = new boolean[12];
 		System.arraycopy(instructionBitEncoding, 7, immediate, 0, 5);
@@ -207,7 +212,7 @@ public class Instruction {
 	public static final String ONE = "100";
 	public static final String TWO = "010";
 	public static final String THREE = "110";
-	public static final String FOUR = "100";
+	public static final String FOUR = "001";
 	public static final String FIVE = "101";
 	public static final String SIX = "011";
 	public static final String SEVEN = "111";
@@ -292,10 +297,11 @@ public class Instruction {
 	//end - start + 1 == 5
 	public static String getRegister(int start, int end, boolean[] bitArray) {
 		int val = 0;
-		for(int pos = start; start <= end; pos++) {
-			pos+= ((long)Math.pow(2, pos));
+		for(int pos = start; pos <= end; pos++) {
+			if(bitArray[pos])
+				val += ((long)Math.pow(2, pos-start));
 		}
 		return "x" + val;
 	}
-	
+
 }

@@ -11,6 +11,7 @@ public class Processor {
 		Word nextInstruction = Memory.loadWord(registerFile.get("pc").calculateValueSigned());
 		boolean[] instructionArray = nextInstruction.bitArray;
 		currentInstruction = new Instruction(instructionArray);
+		System.out.println(currentInstruction.instruction);
 		currentInstruction.valP = registerFile.get("pc").addFour();
 	}
 
@@ -26,6 +27,7 @@ public class Processor {
 		Word w = null;
 		switch(currentInstruction.instruction) {
 		case "ADD": 
+			System.out.println("ADDADDADDADDD");
 			valE = currentInstruction.RS1Val.add(currentInstruction.RS2Val);
 			currentInstruction.EVal = valE; 
 			break;
@@ -156,6 +158,7 @@ public class Processor {
 		case "SLL":
 			valE = currentInstruction.RS1Val.shiftLeft(currentInstruction.RS2Val);
 			currentInstruction.EVal = valE; 
+			System.out.println(valE);
 			break;
 		case "SRL":
 			valE = currentInstruction.RS1Val.shiftRight(currentInstruction.RS2Val,true);
@@ -227,6 +230,7 @@ public class Processor {
 			constant = ALU.signExtension(constant, false, 64);
 			valE = new DoubleWord(ALU.IADD(currentInstruction.RS1Val.bitArray,constant));
 			currentInstruction.EVal = valE; 
+			System.out.println(valE);
 			break;			
 		}
 	}
@@ -310,19 +314,29 @@ public class Processor {
 
 
 
-	/*public static void initialize() {
+	public static void initialize() {
 		if(Compiler.compiled) {
-			Processor.PC = new DoubleWord(Long.parseLong(Compiler.start_address,16));
-			for(long l: Compiler.COMPILED_CONSTANTS.keySet())
-				Memory.storeDoubleWord(l, Compiler.COMPILED_CONSTANTS.get(l));
-			for(long l: Compiler.COMPILED_INSTRUCTIONS.keySet())
-				Memory.storeInstruction(l, Compiler.COMPILED_INSTRUCTIONS.get(l));
+			Processor.registerFile.set("pc",new DoubleWord(Long.parseLong(Compiler.start_address,16)));
+			System.out.println(registerFile.get("pc").calculateValueSigned());
+			for(long l: Compiler.COMPILED_CONSTANTS.keySet()) {
+				LittleEndian le = Compiler.COMPILED_CONSTANTS.get(l);
+				if(le instanceof BYTE)
+					Memory.storeBYTE(l, (BYTE)le);
+				if(le instanceof HalfWord)
+					Memory.storeHalfWord(l, (HalfWord)le);
+				if(le instanceof Word)
+					Memory.storeWord(l, (Word)le);
+				if(le instanceof DoubleWord)
+					Memory.storeDoubleWord(l, (DoubleWord)le);
+				System.out.println(Memory.loadWord(l) + " "+ l);
+			}
 			status = "AOK";
 			registerFile.reset();
 		} else {
 			status = "HLT";
 		}
-	}*/
+		System.out.println("finished");
+	}
 
 	public static void step() {
 		if(status.equals("AOK")) {

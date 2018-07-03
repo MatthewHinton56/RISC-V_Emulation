@@ -36,6 +36,13 @@ public class RegisterFile extends TreeMap<String, DoubleWord>{
 		ret = ret.substring(0,ret.length()-2) + "}";
 		return ret;
 	}
+
+	public void reset() {
+		for(String key: this.keySet()) {
+			this.set(key, new DoubleWord());
+		}
+		
+	}
 	
 	
 }

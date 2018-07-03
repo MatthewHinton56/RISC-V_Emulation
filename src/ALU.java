@@ -85,10 +85,11 @@ public class ALU {
 
 
 	public static boolean[] shiftLeft(boolean[] a, int shamt) {
+		System.out.println("here");
 		boolean[] c = new boolean[a.length];
 		for(int pos = c.length-1; pos >= 0; pos--) {
 			if(pos + shamt < c.length)
-				c[pos+shamt] = c[pos];
+				c[pos+shamt] = a[pos];
 		}
 		return c;
 	}
@@ -98,7 +99,7 @@ public class ALU {
 		boolean sign = a[a.length-1];
 		for(int pos = 0; pos < c.length; pos++) {
 			if(pos - shamt >= 0)
-				c[pos - shamt] = c[pos];
+				c[pos - shamt] = a[pos];
 		}
 		if(!logic) {
 			for(int pos = 0; pos < shamt; pos++)

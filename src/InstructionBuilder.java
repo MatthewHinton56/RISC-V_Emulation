@@ -84,6 +84,7 @@ public class InstructionBuilder {
 	public static String getFunct3(String function, HashMap<String, String> map) {
 		for(String funct3: map.keySet()) {
 			String instruct = map.get(funct3);
+			System.out.println(function+" "+instruct);
 			if(instruct.contains("|"))
 			{
 				String upper = instruct.substring(instruct.indexOf("|")+1);
@@ -96,8 +97,11 @@ public class InstructionBuilder {
 				if(function.equals(upper) || function.equals(lower))
 					return funct3;
 			} else {
-				if(instruct.equals("function"))
+				
+				if(instruct.equals(function)) {
+					System.out.println(instruct);
 					return funct3;
+				}
 			}
 		}
 		return null;
@@ -166,23 +170,23 @@ public class InstructionBuilder {
 				funct3 = getFunct3(function,Instruction.JALR_FUNCT3_TO_FUNCTION);
 				break;
 			}
-			return generateRType(opCode, funct3, Rd, Rs1, Rs2, imm);
+			return generateIType(opCode, funct3, Rd, Rs1, Rs2, imm);
 		}
 
 	}
 
-	private static boolean[] generateRType(String opCode, String funct3, boolean[] Rd, boolean[] Rs1, boolean[] Rs2,
+	private static boolean[] generateIType(String opCode, String funct3, boolean[] Rd, boolean[] Rs1, boolean[] Rs2,
 			boolean[] imm) {
 		boolean[] opCodeBit = stringToBit(opCode);
+		System.out.println(opCode);
 		boolean[] funct3Bit = stringToBit(funct3);
 		boolean[] instruct = new boolean[32];
 		System.arraycopy(opCodeBit, 0, instruct, 0, 7);
 		System.arraycopy(Rd, 0, instruct, 7, 5);
 		System.arraycopy(funct3Bit, 0, instruct, 12, 3);
 		System.arraycopy(Rs1, 0, instruct, 15, 5);
-		System.arraycopy(Rs2, 0, instruct, 20, 5);
-		System.arraycopy(imm, 0, instruct, 25, 7);
-		return null;
+		System.arraycopy(imm, 0, instruct, 20, 12);
+		return instruct;
 	}
 
 	private static boolean[] generateRType(String opCode, String funct3, String funct7, boolean[] Rd, boolean[] Rs1,
@@ -227,7 +231,7 @@ public class InstructionBuilder {
 		System.arraycopy(imm, 12, instruct, 31, 1);
 		return instruct;
 	}
-
+	
 	private static boolean[] generateUJType(String opCode, boolean[] Rd, boolean[] imm) {
 		boolean[] opCodeBit = stringToBit(opCode);
 		boolean[] instruct = new boolean[32];
@@ -245,7 +249,7 @@ public class InstructionBuilder {
 		boolean[] instruct = new boolean[32];
 		System.arraycopy(opCodeBit, 0, instruct, 0, 7);
 		System.arraycopy(Rd, 0, instruct, 7, 5);
-		System.arraycopy(imm, 0, instruct, 12, 20);
+		System.arraycopy(imm, 0, instruct, 0, 20);
 		return instruct;
 
 	}
