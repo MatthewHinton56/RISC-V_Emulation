@@ -316,6 +316,7 @@ public class Processor {
 
 	public static void initialize() {
 		if(Compiler.compiled) {
+			Memory.memory.clear();
 			Processor.registerFile.set("pc",new DoubleWord(Long.parseLong(Compiler.start_address,16)));
 			System.out.println(registerFile.get("pc").calculateValueSigned());
 			for(long l: Compiler.COMPILED_CONSTANTS.keySet()) {
@@ -335,6 +336,7 @@ public class Processor {
 		} else {
 			status = "HLT";
 		}
+		System.out.println(Memory.memory);
 		System.out.println("finished");
 	}
 

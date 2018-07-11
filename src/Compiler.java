@@ -52,7 +52,9 @@ public class Compiler {
 		String rs2 = l.splitLine[2].substring(1);
 		String val;
 		if(TAG_TO_ADDRESS.containsKey(l.splitLine[3])) {
-			val = (Long.parseLong(TAG_TO_ADDRESS.get(l.splitLine[3])) - Long.parseLong(l.address,16)) + "";
+			System.out.println(TAG_TO_ADDRESS.get(l.splitLine[3]));
+			System.out.println(l.address);
+			val = (Long.parseLong(TAG_TO_ADDRESS.get(l.splitLine[3]),16) - Long.parseLong(l.address,16)) + "";
 		} else if(l.splitLine[3].contains("0x")) {
 			val = l.splitLine[3].substring(2);
 		} else {
@@ -320,24 +322,6 @@ public class Compiler {
 	private static HashMap<String, String> TAG_TO_ADDRESS = new HashMap<String, String>(); 
 	private static ArrayList<Line> inputLines = new ArrayList<Line>();
 
-
-
-	public static void main(String[] args) throws FileNotFoundException {
-		//String input = ".pos 0\nirmovq stack, %rsp\nrrmovq %rsp, %rbp\nirmovq src, %rdi\nirmovq dest, %rsi\nirmovq $3, %rdx\ncall copy_block\nhalt";
-		Scanner scan = new Scanner(new File("copy.ys"));
-		String input = "";
-		while(scan.hasNextLine()) {
-			input+=scan.nextLine()+"\n";
-		}
-		System.out.println(compile(input));
-		//System.out.println(Compiler.start_address);
-		//System.out.println(Compiler.COMPILED_CONSTANTS);
-		//System.out.println(Compiler.COMPILED_INSTRUCTIONS);
-		//Processor.initialize();
-		Processor.run();
-		System.out.println(Processor.registerFile.get("%rax"));
-		//System.out.println(Processor.PC.calculateValueSigned());
-	}
 
 	private static class Line {
 		String address;

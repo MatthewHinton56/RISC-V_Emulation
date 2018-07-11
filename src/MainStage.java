@@ -36,6 +36,7 @@ public class MainStage extends Application implements EventHandler<ActionEvent>{
 	public void handle(ActionEvent arg0) {
 		String input = ystab.area.getText();
 		String output = Compiler.compile(input);
+		System.out.println(input);
 		pane.getTabs().remove(yotab);
 		yotab = new YOTab(pane,ystab.fileName.substring(0,ystab.fileName.indexOf(".")) +".o",output);
 		pane.getTabs().add(yotab);
