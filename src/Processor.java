@@ -109,7 +109,7 @@ public class Processor {
 			break;	
 		case "JAL":
 			constant = new boolean[64];
-			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
+			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 20);
 			constant = ALU.signExtension(constant, false, 64);
 			c = new DoubleWord(constant);
 			currentInstruction.EVal = registerFile.get("pc").add(c);
