@@ -56,7 +56,7 @@ public class ALU {
 		}
 		CF = carry;
 		ZF = ALU.Equal(c, new boolean[a.length]);
-		SF = c[c.length-1];
+		SF = isNeg(c);
 		return c;
 	}
 	
@@ -74,8 +74,7 @@ public class ALU {
 	}
 	// a - b
 	public static boolean[] SUB(boolean[] a, boolean[] b) {
-		b = NOT(b);
-		b = ADDONE(b);
+		b = NEG(b);
 		boolean[] c = ADD(a,b);
 		CF = !CF; 
 		//Since the A + ~B + 1 system is used, the carry flag is the inverse of actual. As a borrow request by A - B 
@@ -83,9 +82,21 @@ public class ALU {
 		return c;
 	}
 
+	public static boolean[] NEG(boolean[] a) {
+		return ADDONE(NOT(a));
+	}
+	
+	public static boolean[] ABS(boolean[] a) {
+		return (isNeg(a)) ? NEG(a) : a;
+	}
+	
+	public static boolean isNeg(boolean[] a) {
+		return a[a.length-1];
+	}
+	
+	
 
 	public static boolean[] shiftLeft(boolean[] a, int shamt) {
-		System.out.println("here");
 		boolean[] c = new boolean[a.length];
 		for(int pos = c.length-1; pos >= 0; pos--) {
 			if(pos + shamt < c.length)
@@ -151,7 +162,7 @@ public class ALU {
 		boolean[] c = new boolean[targetSize];
 		boolean sign = a[a.length-1];
 		System.arraycopy(a, 0, c, 0, a.length);
-		if(U && !sign) {
+		if(U || !sign) {
 			return c;
 		}
 		for(int pos = a.length; pos < targetSize; pos++)
@@ -165,7 +176,6 @@ public class ALU {
 	// -2^(arraySize-1) <= l <= 2^(arraySize-1) -1
 	public static boolean[] longToBitArray(long l, int arraySize) {
 		long T_MIN = (long) (-1 * Math.pow(2, arraySize-1));
-		long T_MAX =  (long) (-1 + Math.pow(2, arraySize-1));
 		boolean[] c = new boolean[arraySize];
 		if(l == T_MIN) {
 			c[c.length-1] = true;
@@ -180,9 +190,7 @@ public class ALU {
 				l-=val;
 			}
 		}
-		if(neg)
-			c = ADDONE(NOT(c));
-		return c;
+		return (neg) ? NEG(c) : c;
 	}
 	//arraySize <= 63
 	// -2^(arraySize-1) <= l <= 2^(arraySize-1) -1
@@ -207,6 +215,97 @@ public class ALU {
 		return val;
 	}
 	
+	public static boolean[] multiply(boolean[] multiplicand, boolean[] multiplier) {
+		boolean[] product = new boolean[multiplicand.length];
+		for(int i = 0; i < multiplicand.length; i++) {
+			if(multiplicand[i]) {
+				product = ALU.ADD(product, multiplier);
+			}
+			multiplier = ALU.shiftLeft(multiplier, 1);
+		}
+		return product;
+	}
+	
+	public static boolean[] upperBits(boolean[] multiplicand, boolean[] multiplier, boolean multiplicandSigned, boolean multiplierSigned) {
+		boolean[] multiplicandExtended = signExtension(multiplicand, !multiplicandSigned, multiplicand.length*2 );
+		System.out.println(Arrays.toString(multiplicandExtended));
+		boolean[] multiplierExtended = signExtension(multiplier, !multiplierSigned, multiplier.length*2 );
+		System.out.println(Arrays.toString(multiplierExtended));
+		boolean result[] = multiply(multiplicandExtended,multiplierExtended);
+		boolean[] product = new boolean[multiplicand.length];
+		System.arraycopy(result, result.length/2, product, 0, result.length/2);
+		return product;
+	}
+	//if remainder is true, returns the remainder
+	public static boolean[] unsignedDivision(boolean[] divisor, boolean[] dividend, boolean remainder) {
+		boolean[] quotient = new boolean[divisor.length];
+		divisor = divisorShift(divisor);
+		for(int i = rightMostOne(divisor); i >= 0; i--) {
+			if(canSubtract(dividend, divisor)) {
+				quotient[i] = true;
+				dividend = divSubtract(dividend, divisor);
+			}
+			divisor = ALU.shiftRight(divisor, 1, true);
+		}
+		return (remainder) ? dividend : quotient;
+	}
+	
+	public static boolean[] signedDivision(boolean[] divisor, boolean[] dividend, boolean remainder) {
+		boolean[] divisorABS = ABS(divisor);
+		boolean[] dividendABS = ABS(dividend);
+		boolean[] ret = unsignedDivision(divisorABS, dividendABS, remainder);
+		if(remainder) {
+			return (isNeg(dividend)) ? NEG(ret) : ret;
+		} else {
+			return (isNeg(dividend) ^ isNeg(divisor)) ? NEG(ret) : ret;
+		}
+	}
+	
+	
+	
+	private static boolean[] divSubtract(boolean[] dividend, boolean[] divisor) {
+		boolean[] ret = new boolean[dividend.length];
+		for(int i = 0; i < ret.length; i++) {
+			if(!divisor[i] && dividend[i])
+				ret[i] = true; 
+		}
+		return ret;
+	}
+
+	private static boolean[] divisorShift(boolean[] divisor) {
+		int leftMostOne = -1;
+		int pos = divisor.length-1;
+		while(leftMostOne == -1 && pos >= 0) {
+			if(divisor[pos])
+				leftMostOne = pos;
+			pos--;
+		}
+		int shamt = (divisor.length-1) - leftMostOne;
+		return ALU.shiftLeft(divisor, shamt);
+	}
+	
+	public static int rightMostOne(boolean[] bitArray) {
+		int rightMostOne = -1;
+		int pos = 0;
+		while(rightMostOne == -1 && pos < bitArray.length) {
+			if(bitArray[pos])
+				rightMostOne = pos;
+			pos++;
+		}
+		return rightMostOne;
+	}
+	
+
+	public static boolean canSubtract(boolean[] minuend, boolean[] subtrahend) {
+		for(int i = 0; i < minuend.length; i++) {
+			if(!minuend[i] && subtrahend[i])
+				return false;
+		}
+		return true;
+	}
+	
+	
+	
 
 	public static void main(String[] args) {
 		Scanner scan = new Scanner(System.in);
@@ -215,16 +314,22 @@ public class ALU {
 			int valA = scan.nextInt();
 			System.out.print("valB: ");
 			int valB = scan.nextInt();
-			boolean[] a = longToBitArray(valA,8);
+			boolean[] a = longToBitArrayUnsigned(valA,8);
 			System.out.println(Arrays.toString(a));
-			boolean[] b = longToBitArray(valB,8);
+			boolean[] b = longToBitArrayUnsigned(valB,8);
 			System.out.println(Arrays.toString(b));
-			boolean[] c = AND(a,b);
+			boolean[] c = ALU.unsignedDivision(a, b, false);
+			boolean[] rem = ALU.unsignedDivision(a, b, true);
 			BYTE byt = new BYTE(c);
 			System.out.println(Arrays.toString(c));
 			System.out.println(byt.generateHex());
 			System.out.println(byt.generateBitString());
-			System.out.println(byt.calculateValueUnSigned());
+			System.out.println(byt.calculateValueSigned());
+			 byt = new BYTE(rem);
+			System.out.println(Arrays.toString(rem));
+			System.out.println(byt.generateHex());
+			System.out.println(byt.generateBitString());
+			System.out.println(byt.calculateValueSigned());
 			System.out.println("SF:" + SF);
 			System.out.println("OF:" + OF);
 			System.out.println("ZF:" + ZF);
