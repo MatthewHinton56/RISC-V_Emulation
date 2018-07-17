@@ -375,4 +375,10 @@ public class Instruction {
 		return "x" + val;
 	}
 
+	
+	public static String[] M_EXTENSION_INSTRUCTION = {"MUL", "MULH", "MULHSU", "MULHU", "DIV", "DIVU", "REM", "REMU", "MULW", "DIVW", "DIVUW", "REMW", "REMUW"};
+	
+	public static boolean isMType(String instruction) {
+		return Instruction.contains(M_EXTENSION_INSTRUCTION, instruction);
+	}
 }

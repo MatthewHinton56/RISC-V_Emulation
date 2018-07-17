@@ -21,13 +21,14 @@ public class Processor {
 	}
 
 	public static void execute() {
+		if(Instruction.isMType(currentInstruction.instruction))
+			executeMExtension();
 		DoubleWord valE = null;
 		boolean[] constant = null;
 		DoubleWord c = null;
 		Word w = null;
 		switch(currentInstruction.instruction) {
 		case "ADD": 
-			System.out.println("ADDADDADDADDD");
 			valE = currentInstruction.RS1Val.add(currentInstruction.RS2Val);
 			currentInstruction.EVal = valE; 
 			break;
@@ -154,7 +155,7 @@ public class Processor {
 			w = currentInstruction.RS1Val.getWord(0).subtract(currentInstruction.RS2Val.getWord(0));
 			currentInstruction.EVal = new DoubleWord(w,true);
 			break;	
-			
+
 		case "SLL":
 			valE = currentInstruction.RS1Val.shiftLeft(currentInstruction.RS2Val);
 			currentInstruction.EVal = valE; 
@@ -180,7 +181,7 @@ public class Processor {
 			w = currentInstruction.RS1Val.getWord(0).shiftRight(currentInstruction.RS2Val.getWord(0),false);
 			currentInstruction.EVal = new DoubleWord(w,true); 
 			break;
-			
+
 		case "SLLI":
 			constant = new boolean[6];
 			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 6);
@@ -223,7 +224,7 @@ public class Processor {
 			constant = ALU.signExtension(constant, false, 64);
 			w = new Word(constant);
 			valE = new DoubleWord(currentInstruction.RS1Val.getWord(0).add(w),true);
-			
+
 		default:
 			constant = new boolean[64];
 			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
@@ -232,6 +233,67 @@ public class Processor {
 			currentInstruction.EVal = valE; 
 			System.out.println(valE);
 			break;			
+		}
+	}
+
+	private static void executeMExtension() {
+		DoubleWord valE = null;
+		boolean[] constant = null;
+		DoubleWord c = null;
+		Word w = null;
+		switch(currentInstruction.instruction) {
+		case "MUL":
+			valE = currentInstruction.RS1Val.mul(currentInstruction.RS2Val);
+			currentInstruction.EVal = valE; 
+			break;
+		case "MULH": 
+			valE = currentInstruction.RS1Val.upper(currentInstruction.RS2Val, true, true);
+			currentInstruction.EVal = valE; 
+			break;	
+		case "MULHSU": 
+			valE = currentInstruction.RS1Val.upper(currentInstruction.RS2Val, true, false);
+			currentInstruction.EVal = valE; 
+			break;	
+		case "MULHU": 
+			valE = currentInstruction.RS1Val.upper(currentInstruction.RS2Val, false, false);
+			currentInstruction.EVal = valE; 
+			break;
+		case "DIV": 
+			valE = currentInstruction.RS1Val.div(currentInstruction.RS2Val, true, false);
+			currentInstruction.EVal = valE; 
+			break;
+		case "DIVU": 
+			valE = currentInstruction.RS1Val.div(currentInstruction.RS2Val, false, false);
+			currentInstruction.EVal = valE; 
+			break;	
+		case "REM": 
+			valE = currentInstruction.RS1Val.div(currentInstruction.RS2Val, true, true);
+			currentInstruction.EVal = valE; 
+			break;
+		case "REMU": 
+			valE = currentInstruction.RS1Val.div(currentInstruction.RS2Val, false, true);
+			currentInstruction.EVal = valE; 
+			break;		
+		case "MULW":
+			w = currentInstruction.RS1Val.getWord(0).mul(currentInstruction.RS2Val.getWord(0));
+			currentInstruction.EVal = new DoubleWord(w,true);
+			break;	
+		case "DIVW":
+			w = currentInstruction.RS1Val.getWord(0).div(currentInstruction.RS2Val.getWord(0), true, false);
+			currentInstruction.EVal = new DoubleWord(w,true);
+			break;
+		case "DIVUW":
+			w = currentInstruction.RS1Val.getWord(0).div(currentInstruction.RS2Val.getWord(0), false, false);
+			currentInstruction.EVal = new DoubleWord(w,true);
+			break;
+		case "REMW":
+			w = currentInstruction.RS1Val.getWord(0).div(currentInstruction.RS2Val.getWord(0), true, true);
+			currentInstruction.EVal = new DoubleWord(w,true);
+			break;
+		case "REMUW":
+			w = currentInstruction.RS1Val.getWord(0).div(currentInstruction.RS2Val.getWord(0), true, true);
+			currentInstruction.EVal = new DoubleWord(w,true);
+			break;	
 		}
 	}
 
