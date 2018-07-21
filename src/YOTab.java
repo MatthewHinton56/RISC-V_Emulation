@@ -141,13 +141,14 @@ public class YOTab extends Tab {
 	public void refresh() {
 		registerDisplay.getChildren().clear();
 		int row = 0;
+		registerDisplay.add(new TextField("Status"), 0, row);
+		registerDisplay.add(new TextField(Processor.status), 1, row);
+		row++;
 		for(String register: Processor.registerFile.keySet()) {
 			registerDisplay.add(new TextField(register), 0, row);
 			registerDisplay.add(new TextField("0x"+Processor.registerFile.get(register).displayToString()), 1, row);
 			row++;
 		}
-		registerDisplay.add(new TextField("Status"), 0, row);
-		registerDisplay.add(new TextField(Processor.status), 1, row);
 		String outputDisplay = modifiedDisplay();
 		area.setText(outputDisplay);
 		memDisplay.getChildren().clear();

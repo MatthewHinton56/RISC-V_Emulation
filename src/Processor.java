@@ -513,8 +513,19 @@ public class Processor {
 
 	public static void step() {
 		if(status.equals("AOK")) {
-			while(status.equals("AOK") && Processor.pipeLineIncrement() == false);
+			while(status.equals("AOK") && Processor.pipeLineIncrement() == false) {
+				status = (validInstruction()) ? "AOK" : "HLT";
+			}
+			status = (validInstruction()) ? "AOK" : "HLT";
 		}
+	}
+
+	private static boolean validInstruction() {
+		for(int i = 0; i < instructionStages.length; i++) {
+			if(instructionStages[i] != null && !instructionStages[i].bubble)
+				return true;
+		}
+		return false;
 	}
 
 	public static void run() {

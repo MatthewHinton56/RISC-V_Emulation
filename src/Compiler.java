@@ -308,7 +308,7 @@ public class Compiler {
 
 
 	private static String[] split(String line) {
-		line = line.replace(",", "");
+		line = line.replace(",", " ");
 		int nonWhiteSpace = -1;
 		int index = 0;
 		while(nonWhiteSpace ==-1 && index < line.length()) {
