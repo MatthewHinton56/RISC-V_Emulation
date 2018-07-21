@@ -17,6 +17,11 @@ public class Memory {
 
 	public static DoubleWord loadDoubleWord(long position) {
 		String immediate = "";
+		if(position % 8 != 0) {
+			Processor.status = "HLT";
+			return null;
+		}
+		
 		for(long i = position; i < position + 8; i++) {
 			if(memory.get(i) == null) {
 				immediate += "00";
@@ -35,6 +40,10 @@ public class Memory {
 
 	public static Word loadWord(long position) {
 		String immediate = "";
+		if(position % 4 != 0) {
+			Processor.status = "HLT";
+			return null;
+		}
 		for(long i = position; i < position + 4; i++) {
 			if(memory.get(i) == null) {
 				immediate += "00";
@@ -47,6 +56,10 @@ public class Memory {
 	}
 
 	public static HalfWord loadHalfWord(long position) {
+		if(position % 2 != 0) {
+			Processor.status = "HLT";
+			return null;
+		}
 		String immediate = "";
 		for(long i = position; i < position + 2; i++) {
 			if(memory.get(i) == null) {

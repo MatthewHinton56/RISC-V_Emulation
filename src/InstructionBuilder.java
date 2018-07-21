@@ -167,7 +167,7 @@ public class InstructionBuilder {
 				funct3 = getFunct3(function,Instruction.SYSTEM_FUNCT3_TO_FUNCTION);
 				break;
 			case Instruction.JALR:
-				funct3 = getFunct3(function,Instruction.JALR_FUNCT3_TO_FUNCTION);
+				funct3 = Instruction.ZERO;
 				break;
 			}
 			return generateIType(opCode, funct3, Rd, Rs1, Rs2, imm);

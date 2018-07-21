@@ -42,7 +42,7 @@ public class Processor {
 			instructionStages[EXECUTE_INSTRUCTION_POSITION].exeFinished = true;
 			DoubleWord newPredictedValP = execute();
 			//misprediction
-			if(!pcAddresses[DECODE_ADDRESS_POSITION].equals(newPredictedValP)) {
+			if(!instructionStages[EXECUTE_INSTRUCTION_POSITION].instruction.equals("JALR") && !pcAddresses[DECODE_ADDRESS_POSITION].equals(newPredictedValP)) {
 				System.out.println("MisPredict "+newPredictedValP);
 				pcAddresses[DECODE_ADDRESS_POSITION] = null;
 				pcAddresses[FETCH_ADDRESS_POSITION] = newPredictedValP;
@@ -74,11 +74,12 @@ public class Processor {
 		}
 		if(JALRStall && !decodeStall) {
 			//places bubble in the fetch stage
+			System.out.println("here jalr");
 			instructionStages[DECODE_INSTRUCTION_POSITION] = new Instruction(DECODE);
 		}
 		if(stopFetching)
 			instructionStages[DECODE_INSTRUCTION_POSITION] = null;
-		if(!decodeStall && !stopFetching) {
+		if(!decodeStall && !stopFetching && !JALRStall) {
 			instructionStages[DECODE_INSTRUCTION_POSITION] = fetch();
 			if(instructionStages[DECODE_INSTRUCTION_POSITION] != null)
 				instructionStages[DECODE_INSTRUCTION_POSITION].stage = DECODE;
@@ -106,6 +107,11 @@ public class Processor {
 	//returns predicted PC
 	public static Instruction fetch() {
 		Word nextInstruction = Memory.loadWord(pcAddresses[0].calculateValueSigned());
+		if(nextInstruction == null) {
+			stopCount = 0;
+			return null;
+		}
+			
 		boolean[] instructionArray = nextInstruction.bitArray;
 		Instruction currentInstruction = new Instruction(instructionArray);
 		if(currentInstruction.stop) { 
@@ -114,8 +120,10 @@ public class Processor {
 			return null;
 		}
 		currentInstruction.valP = predictPC(currentInstruction);
-		if(currentInstruction.instruction.equals("JALR"))
+		if(currentInstruction.instruction.equals("JALR")) {
 			JALRStall = true;
+			System.out.println("jalr hereeee");
+		}
 		return currentInstruction;
 	}
 
@@ -256,7 +264,8 @@ public class Processor {
 			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 20);
 			constant = ALU.signExtension(constant, false, 64);
 			c = new DoubleWord(constant);
-			currentInstruction.EVal = pcAddresses[EXECUTE_ADDRESS_POSITION].add(c);
+			currentInstruction.valP = pcAddresses[EXECUTE_ADDRESS_POSITION].add(c);
+			currentInstruction.EVal = pcAddresses[EXECUTE_ADDRESS_POSITION].addFour();
 			break;
 		case "LUI":
 			constant = new boolean[64];
@@ -379,7 +388,8 @@ public class Processor {
 		}
 		if(currentInstruction.instruction.equals("JALR")) {
 			Processor.pcAddresses[0] = currentInstruction.EVal;
-			currentInstruction.valP = currentInstruction.valP;
+			currentInstruction.valP = currentInstruction.EVal;
+			currentInstruction.EVal = pcAddresses[EXECUTE_ADDRESS_POSITION].addFour();
 			JALRStall = false;
 			stopFetching = false;
 		}
@@ -391,40 +401,48 @@ public class Processor {
 		Instruction currentInstruction = Processor.instructionStages[2];
 		switch(currentInstruction.instruction) {
 		case "LD":
-			currentInstruction.MVal = Memory.loadDoubleWord(currentInstruction.EVal.calculateValueSigned());
+			DoubleWord memDW =  Memory.loadDoubleWord(currentInstruction.EVal.calculateValueSigned());
+			currentInstruction.MVal = (memDW == null) ? null : memDW;
 			break;
 		case "SD": 
 			Memory.storeDoubleWord(currentInstruction.EVal.calculateValueSigned(), currentInstruction.RS2Val);
 			break;
 		case "LW":
-			currentInstruction.MVal = new  DoubleWord(Memory.loadWord(currentInstruction.EVal.calculateValueSigned()), true);
+			Word memW =  Memory.loadWord(currentInstruction.EVal.calculateValueSigned());
+			currentInstruction.MVal = (memW == null) ? null : new  DoubleWord(memW, true);
 			break;
 		case "LWU":
-			currentInstruction.MVal = new  DoubleWord(Memory.loadWord(currentInstruction.EVal.calculateValueSigned()), false);
+			Word memWU =  Memory.loadWord(currentInstruction.EVal.calculateValueSigned());
+			currentInstruction.MVal = (memWU == null) ? null : new  DoubleWord(memWU, false);
 			break;
 		case "SW": 
 			Memory.storeWord(currentInstruction.EVal.calculateValueSigned(), currentInstruction.RS2Val.getWord(0));
 			break;
 		case "LH":
-			currentInstruction.MVal = new  DoubleWord(Memory.loadHalfWord(currentInstruction.EVal.calculateValueSigned()), true);
+			HalfWord memH =  Memory.loadHalfWord(currentInstruction.EVal.calculateValueSigned());
+			currentInstruction.MVal = (memH == null) ? null : new  DoubleWord(memH, true);
 			break;
 		case "LHU":
-			currentInstruction.MVal = new  DoubleWord(Memory.loadHalfWord(currentInstruction.EVal.calculateValueSigned()), false);
+			HalfWord memHU =  Memory.loadHalfWord(currentInstruction.EVal.calculateValueSigned());
+			currentInstruction.MVal = (memHU == null) ? null : new  DoubleWord(memHU, false);
 			break;
 		case "SH": 
 			Memory.storeHalfWord(currentInstruction.EVal.calculateValueSigned(), currentInstruction.RS2Val.getHalfWord(0));
 			break;	
 		case "LB":
-			currentInstruction.MVal = new  DoubleWord(Memory.loadBYTE(currentInstruction.EVal.calculateValueSigned()), true);
+			BYTE memB =  Memory.loadBYTE(currentInstruction.EVal.calculateValueSigned());
+			currentInstruction.MVal = (memB == null) ? null : new  DoubleWord(memB, true);
 			break;
 		case "LBU":
-			currentInstruction.MVal = new  DoubleWord(Memory.loadBYTE(currentInstruction.EVal.calculateValueSigned()), false);
+			BYTE memBU =  Memory.loadBYTE(currentInstruction.EVal.calculateValueSigned());
+			currentInstruction.MVal = (memBU == null) ? null : new  DoubleWord(memBU, false);
 			break;
 		case "SB": 
 			Memory.storeBYTE(currentInstruction.EVal.calculateValueSigned(), currentInstruction.RS2Val.getBYTE(0));
 			break;		
 
 		}
+		//if(currentInstruction.memory && currentInstruction)
 	}
 
 	public static void writeBack() {
@@ -439,10 +457,6 @@ public class Processor {
 		case "LB":
 		case "LBU":	
 			registerFile.set(currentInstruction.Rd, currentInstruction.MVal);
-			break;
-		case "JALR":	
-		case "JAL":
-			registerFile.set(currentInstruction.Rd, currentInstruction.valP);
 			break;
 		default:	
 			registerFile.set(currentInstruction.Rd, currentInstruction.EVal);

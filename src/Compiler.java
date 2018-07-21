@@ -109,12 +109,12 @@ public class Compiler {
 	static String uAndUJType(Line l, String instruction) {
 		String rD = l.splitLine[1].substring(1);
 		String val;
-		if(TAG_TO_ADDRESS.containsKey(l.splitLine[3])) {
-			val = (Long.parseLong(TAG_TO_ADDRESS.get(l.splitLine[3])) - Long.parseLong(l.address,16)) + "";
-		} else if(l.splitLine[3].contains("0x")) {
-			val = l.splitLine[3].substring(2);
+		if(TAG_TO_ADDRESS.containsKey(l.splitLine[2])) {
+			val = (Long.parseLong(TAG_TO_ADDRESS.get(l.splitLine[2])) - Long.parseLong(l.address,16)) + "";
+		} else if(l.splitLine[2].contains("0x")) {
+			val = l.splitLine[2].substring(2);
 		} else {
-			val = l.splitLine[3];
+			val = l.splitLine[2];
 		}
 
 		boolean[] rDArray = ALU.longToBitArrayUnsigned(Long.parseLong(rD), 5);

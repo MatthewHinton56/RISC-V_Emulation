@@ -316,7 +316,7 @@ public class Instruction {
 		SYSTEM_FUNCT3_TO_FUNCTION.put(SEVEN, "CSRRCI");
 
 		JALR_FUNCT3_TO_FUNCTION = new HashMap<String, String> ();
-		SYSTEM_FUNCT3_TO_FUNCTION.put(ZERO, "JALR");
+		JALR_FUNCT3_TO_FUNCTION.put(ZERO, "JALR");
 	}
 	//end - start + 1 == 5
 	public static String getRegister(int start, int end, boolean[] bitArray) {

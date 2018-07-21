@@ -146,6 +146,8 @@ public class YOTab extends Tab {
 			registerDisplay.add(new TextField("0x"+Processor.registerFile.get(register).displayToString()), 1, row);
 			row++;
 		}
+		registerDisplay.add(new TextField("Status"), 0, row);
+		registerDisplay.add(new TextField(Processor.status), 1, row);
 		String outputDisplay = modifiedDisplay();
 		area.setText(outputDisplay);
 		memDisplay.getChildren().clear();
