@@ -4,23 +4,163 @@ import java.util.Arrays;
 public class Processor {
 
 	public static final RegisterFile registerFile = new RegisterFile();
-	public static Instruction currentInstruction;
+	public static final DoubleWord[] pcAddresses = new DoubleWord[5];
+	public static final Instruction[] instructionStages = new Instruction[4];
 	public static String status;
+	public static boolean JALRStall, stopFetching;
+	public static int stopCount;
 
-	public static void fetch() {
-		Word nextInstruction = Memory.loadWord(registerFile.get("pc").calculateValueSigned());
+
+	//returns true if a instruction went through writeback
+	private static boolean pipeLineIncrement() {
+		//writeBack
+		boolean ret = false;
+		if(instructionStages[WRITE_BACK_INSTRUCTION_POSITION] != null && !instructionStages[WRITE_BACK_INSTRUCTION_POSITION].bubble) {
+			ret = true;
+			writeBack();
+		}
+		if(instructionStages[WRITE_BACK_INSTRUCTION_POSITION] != null) 
+			instructionStages[WRITE_BACK_INSTRUCTION_POSITION].stage = FINISHED;
+		pcAddresses[WRITE_BACK_ADDRESS_POSITION] = null;
+		instructionStages[WRITE_BACK_INSTRUCTION_POSITION] = null;
+
+		//Memory
+		if(instructionStages[MEMORY_INSTRUCTION_POSITION] != null && !instructionStages[MEMORY_INSTRUCTION_POSITION].bubble) {
+			if(instructionStages[MEMORY_INSTRUCTION_POSITION].memory)
+				instructionStages[MEMORY_INSTRUCTION_POSITION].memLoaded = true;
+			memory();
+		}
+		pcAddresses[WRITE_BACK_ADDRESS_POSITION] = pcAddresses[MEMORY_ADDRESS_POSITION];
+		pcAddresses[MEMORY_ADDRESS_POSITION] = null;
+		instructionStages[WRITE_BACK_INSTRUCTION_POSITION] = instructionStages[MEMORY_INSTRUCTION_POSITION];
+		instructionStages[MEMORY_INSTRUCTION_POSITION] = null;
+		if(instructionStages[WRITE_BACK_INSTRUCTION_POSITION] != null)  
+			instructionStages[WRITE_BACK_INSTRUCTION_POSITION].stage = WRITE_BACK;
+
+		//Execute
+		if(instructionStages[EXECUTE_INSTRUCTION_POSITION] != null && !instructionStages[EXECUTE_INSTRUCTION_POSITION].bubble) {
+			instructionStages[EXECUTE_INSTRUCTION_POSITION].exeFinished = true;
+			DoubleWord newPredictedValP = execute();
+			//misprediction
+			if(!pcAddresses[DECODE_ADDRESS_POSITION].equals(newPredictedValP)) {
+				System.out.println("MisPredict "+newPredictedValP);
+				pcAddresses[DECODE_ADDRESS_POSITION] = null;
+				pcAddresses[FETCH_ADDRESS_POSITION] = newPredictedValP;
+				instructionStages[DECODE_INSTRUCTION_POSITION] = new Instruction(DECODE);
+			}
+		}
+		pcAddresses[MEMORY_ADDRESS_POSITION] = pcAddresses[EXECUTE_ADDRESS_POSITION];
+		pcAddresses[EXECUTE_ADDRESS_POSITION] = null;
+		instructionStages[MEMORY_INSTRUCTION_POSITION] = instructionStages[EXECUTE_INSTRUCTION_POSITION];
+		instructionStages[EXECUTE_INSTRUCTION_POSITION] = null;
+		if(instructionStages[MEMORY_INSTRUCTION_POSITION] != null) 
+			instructionStages[MEMORY_INSTRUCTION_POSITION].stage = MEMORY;
+
+		boolean decodeStall = false;
+		if(instructionStages[DECODE_INSTRUCTION_POSITION] != null && !instructionStages[DECODE_INSTRUCTION_POSITION].bubble) {
+			decodeStall = decode();
+		}
+		if(!decodeStall) {
+			pcAddresses[EXECUTE_ADDRESS_POSITION] = pcAddresses[DECODE_ADDRESS_POSITION];
+			pcAddresses[DECODE_ADDRESS_POSITION] = null;
+			instructionStages[EXECUTE_INSTRUCTION_POSITION] = instructionStages[DECODE_INSTRUCTION_POSITION];
+			instructionStages[DECODE_INSTRUCTION_POSITION] = null;
+			if(instructionStages[EXECUTE_INSTRUCTION_POSITION] != null) 
+				instructionStages[EXECUTE_INSTRUCTION_POSITION].stage = EXECUTE;
+		} else {
+			//puts a bubble
+			pcAddresses[EXECUTE_ADDRESS_POSITION] = null;
+			instructionStages[EXECUTE_INSTRUCTION_POSITION] = new Instruction(EXECUTE);
+		}
+		if(JALRStall && !decodeStall) {
+			//places bubble in the fetch stage
+			instructionStages[DECODE_INSTRUCTION_POSITION] = new Instruction(DECODE);
+		}
+		if(stopFetching)
+			instructionStages[DECODE_INSTRUCTION_POSITION] = null;
+		if(!decodeStall && !stopFetching) {
+			instructionStages[DECODE_INSTRUCTION_POSITION] = fetch();
+			if(instructionStages[DECODE_INSTRUCTION_POSITION] != null)
+				instructionStages[DECODE_INSTRUCTION_POSITION].stage = DECODE;
+			pcAddresses[DECODE_ADDRESS_POSITION] = pcAddresses[FETCH_ADDRESS_POSITION];
+			if(instructionStages[DECODE_INSTRUCTION_POSITION] != null)
+				pcAddresses[FETCH_ADDRESS_POSITION] = instructionStages[DECODE_INSTRUCTION_POSITION].valP;
+		}
+		if(stopFetching && stopCount == 0)
+			status = "HLT";
+		stopCount--;
+		System.out.println(Arrays.toString(instructionStages));
+		System.out.println(Arrays.toString(pcAddresses));
+		setPC();
+		return ret;
+	}
+
+	private static void setPC() {
+		for(int i = WRITE_BACK_ADDRESS_POSITION; i >= 0; i--)
+			if(pcAddresses[i] != null) {
+				registerFile.set("pc", pcAddresses[i]);
+				i= (-1);
+			}
+	}
+
+	//returns predicted PC
+	public static Instruction fetch() {
+		Word nextInstruction = Memory.loadWord(pcAddresses[0].calculateValueSigned());
 		boolean[] instructionArray = nextInstruction.bitArray;
-		currentInstruction = new Instruction(instructionArray);
-		System.out.println(currentInstruction.instruction);
-		currentInstruction.valP = registerFile.get("pc").addFour();
+		Instruction currentInstruction = new Instruction(instructionArray);
+		if(currentInstruction.stop) { 
+			stopFetching = true;
+			stopCount = 4;
+			return null;
+		}
+		currentInstruction.valP = predictPC(currentInstruction);
+		if(currentInstruction.instruction.equals("JALR"))
+			JALRStall = true;
+		return currentInstruction;
 	}
 
-	public static void decode() {
-		currentInstruction.RS1Val = registerFile.get(currentInstruction.Rs1);
-		currentInstruction.RS2Val = registerFile.get(currentInstruction.Rs2); 
+	private static DoubleWord predictPC(Instruction currentInstruction) {
+		if(currentInstruction.instruction.equals("JAL")) {
+			boolean[] constant = new boolean[64];
+			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 20);
+			constant = ALU.signExtension(constant, false, 64);
+			DoubleWord c = new DoubleWord(constant);
+			return c;
+		}
+		return pcAddresses[0].addFour();
 	}
 
-	public static void execute() {
+	//returns true if stall is required
+	public static boolean decode() {
+		Instruction currentInstruction = Processor.instructionStages[0];
+		DoubleWord RS1ValTemp = forward(currentInstruction.Rs1);
+		DoubleWord RS2ValTemp = forward(currentInstruction.Rs2);
+		System.out.println(currentInstruction.instruction+" "+currentInstruction.Rs1 + " "+ currentInstruction.Rs2);
+		if(RS1ValTemp == null || RS2ValTemp == null)
+			return true;
+		currentInstruction.RS1Val = RS1ValTemp;
+		currentInstruction.RS2Val = RS2ValTemp;
+		return false;
+	}
+
+
+	public static DoubleWord forward(String register) {
+		for(int i = EXECUTE_INSTRUCTION_POSITION; i <= WRITE_BACK_INSTRUCTION_POSITION; i++) {
+			if(instructionStages[i] != null && !instructionStages[i].bubble && instructionStages[i].Rd.equals(register)) {
+				if(instructionStages[i].memLoaded) {
+					return (instructionStages[i].memory) ? instructionStages[i].MVal : instructionStages[i].EVal;
+				} else {
+					return null;
+				}
+			}
+		}
+		return registerFile.get(register);
+	}
+
+
+	//returns the new predicted valP, if it is different than the previous, the previous two values are bubbled out.
+	public static DoubleWord execute() {
+		Instruction currentInstruction = Processor.instructionStages[1];
 		DoubleWord valE = null;
 		boolean[] constant = null;
 		DoubleWord c = null;
@@ -34,15 +174,19 @@ public class Processor {
 		case "SUB":
 			valE = currentInstruction.RS1Val.subtract(currentInstruction.RS2Val);
 			currentInstruction.EVal = valE; 
+			currentInstruction.EVal = valE; 
 			break;
 		case "AND":
 			valE = currentInstruction.RS1Val.and(currentInstruction.RS2Val);
+			currentInstruction.EVal = valE; 
 			break;
 		case "OR":
 			valE = currentInstruction.RS1Val.or(currentInstruction.RS2Val);
+			currentInstruction.EVal = valE; 
 			break;
 		case "XOR":
 			valE = currentInstruction.RS1Val.xor(currentInstruction.RS2Val);
+			currentInstruction.EVal = valE; 
 			break;	
 		case "XORI":
 			constant = new boolean[64];
@@ -70,49 +214,49 @@ public class Processor {
 			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
 			constant = ALU.signExtension(constant, false, 64);
 			c = new DoubleWord(constant);
-			currentInstruction.valP = (currentInstruction.RS1Val.equals(currentInstruction.RS2Val)) ? registerFile.get("pc").add(c) : currentInstruction.valP;
+			currentInstruction.valP = (currentInstruction.RS1Val.equals(currentInstruction.RS2Val)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
 			break;
 		case "BNE":
 			constant = new boolean[64];
 			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
 			constant = ALU.signExtension(constant, false, 64);
 			c = new DoubleWord(constant);
-			currentInstruction.valP = (!currentInstruction.RS1Val.equals(currentInstruction.RS2Val)) ? registerFile.get("pc").add(c) : currentInstruction.valP;
+			currentInstruction.valP = (!currentInstruction.RS1Val.equals(currentInstruction.RS2Val)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
 			break;	
 		case "BLT":
 			constant = new boolean[64];
 			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
 			constant = ALU.signExtension(constant, false, 64);
 			c = new DoubleWord(constant);
-			currentInstruction.valP = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? registerFile.get("pc").add(c) : currentInstruction.valP;
+			currentInstruction.valP = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
 			break;
 		case "BLTU":
 			constant = new boolean[64];
 			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
 			constant = ALU.signExtension(constant, false, 64);
 			c = new DoubleWord(constant);
-			currentInstruction.valP = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,false)) ? registerFile.get("pc").add(c) : currentInstruction.valP;
+			currentInstruction.valP = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,false)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
 			break;	
 		case "BGE":
 			constant = new boolean[64];
 			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
 			constant = ALU.signExtension(constant, false, 64);
 			c = new DoubleWord(constant);
-			currentInstruction.valP = (!currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? registerFile.get("pc").add(c) : currentInstruction.valP;
+			currentInstruction.valP = (!currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
 			break;
 		case "BGEU":
 			constant = new boolean[64];
 			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
 			constant = ALU.signExtension(constant, false, 64);
 			c = new DoubleWord(constant);
-			currentInstruction.valP = (!currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,false)) ? registerFile.get("pc").add(c) : currentInstruction.valP;
+			currentInstruction.valP = (!currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,false)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
 			break;	
 		case "JAL":
 			constant = new boolean[64];
 			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 20);
 			constant = ALU.signExtension(constant, false, 64);
 			c = new DoubleWord(constant);
-			currentInstruction.EVal = registerFile.get("pc").add(c);
+			currentInstruction.EVal = pcAddresses[EXECUTE_ADDRESS_POSITION].add(c);
 			break;
 		case "LUI":
 			constant = new boolean[64];
@@ -125,7 +269,7 @@ public class Processor {
 			System.arraycopy(currentInstruction.immediate, 12, constant, 12, 20);
 			constant = ALU.signExtension(constant, false, 64);
 			c = new DoubleWord(constant);
-			currentInstruction.EVal = registerFile.get("pc").add(c);
+			currentInstruction.EVal = pcAddresses[EXECUTE_ADDRESS_POSITION].add(c);
 		case "SLT":
 			currentInstruction.EVal = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? new DoubleWord(1) : new DoubleWord();
 			break;
@@ -154,7 +298,7 @@ public class Processor {
 			w = currentInstruction.RS1Val.getWord(0).subtract(currentInstruction.RS2Val.getWord(0));
 			currentInstruction.EVal = new DoubleWord(w,true);
 			break;	
-			
+
 		case "SLL":
 			valE = currentInstruction.RS1Val.shiftLeft(currentInstruction.RS2Val);
 			currentInstruction.EVal = valE; 
@@ -180,7 +324,7 @@ public class Processor {
 			w = currentInstruction.RS1Val.getWord(0).shiftRight(currentInstruction.RS2Val.getWord(0),false);
 			currentInstruction.EVal = new DoubleWord(w,true); 
 			break;
-			
+
 		case "SLLI":
 			constant = new boolean[6];
 			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 6);
@@ -223,7 +367,7 @@ public class Processor {
 			constant = ALU.signExtension(constant, false, 64);
 			w = new Word(constant);
 			valE = new DoubleWord(currentInstruction.RS1Val.getWord(0).add(w),true);
-			
+
 		default:
 			constant = new boolean[64];
 			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
@@ -233,9 +377,18 @@ public class Processor {
 			System.out.println(valE);
 			break;			
 		}
+		if(currentInstruction.instruction.equals("JALR")) {
+			Processor.pcAddresses[0] = currentInstruction.EVal;
+			currentInstruction.valP = currentInstruction.valP;
+			JALRStall = false;
+			stopFetching = false;
+		}
+		System.out.println(currentInstruction.instruction+" "+currentInstruction.EVal);
+		return currentInstruction.valP;
 	}
 
 	public static void memory() {
+		Instruction currentInstruction = Processor.instructionStages[2];
 		switch(currentInstruction.instruction) {
 		case "LD":
 			currentInstruction.MVal = Memory.loadDoubleWord(currentInstruction.EVal.calculateValueSigned());
@@ -275,6 +428,8 @@ public class Processor {
 	}
 
 	public static void writeBack() {
+		Instruction currentInstruction = Processor.instructionStages[3];
+		System.out.println("Rd"+currentInstruction.Rd);
 		switch(currentInstruction.instruction) {
 		case "LD":
 		case "LW":
@@ -300,16 +455,6 @@ public class Processor {
 		registerFile.set("pc", start);
 	}
 
-	public static void pc() {
-		switch(currentInstruction.instruction) {
-		case "JALR":
-		case "JAL":
-			registerFile.set("pc", currentInstruction.EVal);
-			break;
-		default:
-			registerFile.set("pc", currentInstruction.valP);
-		}
-	}
 
 
 
@@ -318,6 +463,8 @@ public class Processor {
 		if(Compiler.compiled) {
 			Memory.memory.clear();
 			Processor.registerFile.set("pc",new DoubleWord(Long.parseLong(Compiler.start_address,16)));
+			clearArrays();
+			pcAddresses[0] = new DoubleWord(Long.parseLong(Compiler.start_address,16));
 			System.out.println(registerFile.get("pc").calculateValueSigned());
 			for(long l: Compiler.COMPILED_CONSTANTS.keySet()) {
 				LittleEndian le = Compiler.COMPILED_CONSTANTS.get(l);
@@ -331,42 +478,60 @@ public class Processor {
 					Memory.storeDoubleWord(l, (DoubleWord)le);
 				System.out.println(Memory.loadWord(l) + " "+ l);
 			}
+			stopCount = -1;
 			status = "AOK";
 			registerFile.reset();
+			JALRStall = false;
+			stopFetching = false;
 		} else {
 			status = "HLT";
 		}
-		System.out.println(Memory.memory);
+		System.out.println(pcAddresses[0]);
 		System.out.println("finished");
+	}
+
+	private static void clearArrays() {
+		for(int i = 0; i < pcAddresses.length; i++)
+			pcAddresses[i] = null;
+		for(int i = 0; i < instructionStages.length; i++)
+			instructionStages[i] = null;
 	}
 
 	public static void step() {
 		if(status.equals("AOK")) {
-			fetch();
-			if(status.equals("AOK")) {
-				decode();
-				execute();
-				memory();
-				writeBack();
-				pc();
-			}
+			while(status.equals("AOK") && Processor.pipeLineIncrement() == false);
 		}
 	}
 
 	public static void run() {
 		while(status.equals("AOK")) {
-			fetch();
-			if(status.equals("AOK")) {
-				decode();
-				execute();
-				memory();
-				writeBack();
-				pc();
-				//System.out.println(registerFile.get("%rdx"));
-				//System.out.println(registerFile.get("%rsp"));
-				//System.out.println(PC.calculateValueSigned());
-			}
+			step();
 		}
 	}
+	
+	public static void clockPulse() {
+		if(status.equals("AOK")) {
+			Processor.pipeLineIncrement();
+		}
+	}
+
+	public static final String FETCH = "Fetch";
+	public static final String DECODE = "Decode";
+	public static final String EXECUTE = "Execute";
+	public static final String MEMORY = "Memory";
+	public static final String WRITE_BACK = "Write Back";
+	public static final String FINISHED = "Finished";
+
+	public static final int WRITE_BACK_INSTRUCTION_POSITION = 3;
+	public static final int MEMORY_INSTRUCTION_POSITION = 2;
+	public static final int EXECUTE_INSTRUCTION_POSITION = 1;
+	public static final int DECODE_INSTRUCTION_POSITION = 0;
+
+	public static final int WRITE_BACK_ADDRESS_POSITION = 4;
+	public static final int MEMORY_ADDRESS_POSITION = 3;
+	public static final int EXECUTE_ADDRESS_POSITION = 2;
+	public static final int DECODE_ADDRESS_POSITION = 1;
+	public static final int FETCH_ADDRESS_POSITION = 0;
+
 
 }

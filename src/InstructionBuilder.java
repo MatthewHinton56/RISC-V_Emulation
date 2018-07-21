@@ -64,14 +64,14 @@ public class InstructionBuilder {
 		INSTRUCTION_TO_OPCODE.put("FENCE", Instruction.MISC_MEM);
 		INSTRUCTION_TO_OPCODE.put("FENCE.I", Instruction.MISC_MEM);
 
-		INSTRUCTION_TO_OPCODE.put("ECALL", Instruction.SYSYEM);
-		INSTRUCTION_TO_OPCODE.put("EBREAK", Instruction.SYSYEM);
-		INSTRUCTION_TO_OPCODE.put("CSRRW", Instruction.SYSYEM);
-		INSTRUCTION_TO_OPCODE.put("CSRRS", Instruction.SYSYEM);
-		INSTRUCTION_TO_OPCODE.put("CSRRC", Instruction.SYSYEM);
-		INSTRUCTION_TO_OPCODE.put("CSRRWI", Instruction.SYSYEM);
-		INSTRUCTION_TO_OPCODE.put("CSRRSI", Instruction.SYSYEM);	
-		INSTRUCTION_TO_OPCODE.put("CSRRCI", Instruction.SYSYEM);
+		INSTRUCTION_TO_OPCODE.put("ECALL", Instruction.SYSTEM);
+		INSTRUCTION_TO_OPCODE.put("EBREAK", Instruction.SYSTEM);
+		INSTRUCTION_TO_OPCODE.put("CSRRW", Instruction.SYSTEM);
+		INSTRUCTION_TO_OPCODE.put("CSRRS", Instruction.SYSTEM);
+		INSTRUCTION_TO_OPCODE.put("CSRRC", Instruction.SYSTEM);
+		INSTRUCTION_TO_OPCODE.put("CSRRWI", Instruction.SYSTEM);
+		INSTRUCTION_TO_OPCODE.put("CSRRSI", Instruction.SYSTEM);	
+		INSTRUCTION_TO_OPCODE.put("CSRRCI", Instruction.SYSTEM);
 
 		INSTRUCTION_TO_OPCODE.put("JALR", Instruction.JALR);
 
@@ -163,8 +163,8 @@ public class InstructionBuilder {
 			case Instruction.MISC_MEM:
 				funct3 = getFunct3(function,Instruction.MISC_MEM_FUNCT3_TO_FUNCTION);
 				break;
-			case Instruction.SYSYEM:
-				funct3 = getFunct3(function,Instruction.SYSYEM_FUNCT3_TO_FUNCTION);
+			case Instruction.SYSTEM:
+				funct3 = getFunct3(function,Instruction.SYSTEM_FUNCT3_TO_FUNCTION);
 				break;
 			case Instruction.JALR:
 				funct3 = getFunct3(function,Instruction.JALR_FUNCT3_TO_FUNCTION);

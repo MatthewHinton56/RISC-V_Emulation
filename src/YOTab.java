@@ -1,3 +1,5 @@
+import java.util.Scanner;
+
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Rectangle2D;
@@ -17,7 +19,7 @@ import javafx.stage.Screen;
 public class YOTab extends Tab {
 	
 	String fileName;
-	Button step,run,initialize;
+	Button step,run,initialize, clockPulse;
 	TextArea area;
 	ScrollPane pane, displayPane;
 	BorderPane border;
@@ -27,10 +29,12 @@ public class YOTab extends Tab {
 	RadioButton byteButton, halfWordButton, wordButton, doubleWordButton; 
 	TabPane parent;
 	HBox box;
+	String inputText;
 	public YOTab(TabPane parent, String fileName, String inputText) {
 		this.parent = parent;
 		border = new BorderPane();
 		area = new TextArea(inputText);
+		this.inputText = inputText;
 		Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
 		area.setPrefHeight(bounds.getHeight()-175);
 		area.setPrefWidth(bounds.getWidth()/2);
@@ -116,7 +120,16 @@ public class YOTab extends Tab {
 				refresh();
 			}
 		});
-		box.getChildren().addAll(initialize,step,run);
+		clockPulse = new Button("Clock Pulse");
+		clockPulse.setPrefHeight(100);
+		clockPulse.setPrefWidth(100);
+		clockPulse.setOnAction(new EventHandler<ActionEvent>() {
+			public void handle(ActionEvent arg0) {
+				Processor.clockPulse();
+				refresh();
+			}
+		});
+		box.getChildren().addAll(initialize,step,run,clockPulse);
 		border.setBottom(box);
 		border.setLeft(pane);
 		border.setRight(displayPane);
@@ -133,7 +146,8 @@ public class YOTab extends Tab {
 			registerDisplay.add(new TextField("0x"+Processor.registerFile.get(register).displayToString()), 1, row);
 			row++;
 		}
-		
+		String outputDisplay = modifiedDisplay();
+		area.setText(outputDisplay);
 		memDisplay.getChildren().clear();
 		memDisplay.add(byteButton, 0, 0);
 		memDisplay.add(halfWordButton, 1, 0);
@@ -163,6 +177,31 @@ public class YOTab extends Tab {
 				row++;
 			}
 		}
+	}
+
+	private String modifiedDisplay() {
+		String output = "";
+		Scanner scan = new Scanner(inputText);
+		while(scan.hasNextLine()) {
+			String line = scan.nextLine();
+			String addressString = line.substring(line.indexOf("x")+1, line.indexOf(":"));
+			DoubleWord address = new DoubleWord(Long.parseLong(addressString, 16));
+			if(Processor.pcAddresses[Processor.FETCH_ADDRESS_POSITION] != null && Processor.pcAddresses[Processor.FETCH_ADDRESS_POSITION].equals(address))
+				output+= " F ";
+			else if(Processor.pcAddresses[Processor.DECODE_ADDRESS_POSITION] != null && Processor.pcAddresses[Processor.DECODE_ADDRESS_POSITION].equals(address))
+				output+= " D ";
+			else if(Processor.pcAddresses[Processor.EXECUTE_ADDRESS_POSITION] != null && Processor.pcAddresses[Processor.EXECUTE_ADDRESS_POSITION].equals(address))
+				output+= " E ";
+			else if(Processor.pcAddresses[Processor.MEMORY_ADDRESS_POSITION] != null && Processor.pcAddresses[Processor.MEMORY_ADDRESS_POSITION].equals(address))
+				output+= " M ";
+			else if(Processor.pcAddresses[Processor.WRITE_BACK_ADDRESS_POSITION] != null && Processor.pcAddresses[Processor.WRITE_BACK_ADDRESS_POSITION].equals(address))
+				output+= " W ";
+			else 
+				output+= "   ";
+			output+=line+"\n";
+		}
+		scan.close();
+		return output;
 	}
 	
 	

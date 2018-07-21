@@ -8,20 +8,23 @@ public class Instruction {
 	public static HashMap<String, String> U_OPCODE_TO_INSTRUCTION, UJ_OPCODE_TO_INSTRUCTION;
 	public static HashMap<String, String> BRANCH_FUNCT3_TO_FUNCTION, STORE_FUNCT3_TO_FUNCTION,
 	OP_FUNCT3_TO_FUNCTION, OP_32_FUNCT3_TO_FUNCTION, OP_32_IMM_FUNCT3_TO_FUNCTION, LOAD_FUNCT3_TO_FUNCTION, OP_IMM_FUNCT3_TO_FUNCTION,
-	MISC_MEM_FUNCT3_TO_FUNCTION, SYSYEM_FUNCT3_TO_FUNCTION, JALR_FUNCT3_TO_FUNCTION;
+	MISC_MEM_FUNCT3_TO_FUNCTION, SYSTEM_FUNCT3_TO_FUNCTION, JALR_FUNCT3_TO_FUNCTION;
 
 	boolean[] immediate;
 	String Rd, Rs1, Rs2;
+	String stage;
 	DoubleWord RS1Val, RS2Val, EVal, MVal, valP;
 	boolean conditionMet;
 	//0 - RS1Val, 1 - RS2Val, 2 - EVal, 3 - MVal
 	String type, instruction;
 	boolean memory;
+	boolean memLoaded, branch, exeFinished, bubble;
 	public boolean stop;
 	public Instruction(boolean[] instructionBitEncoding) {
 		String opCode = bitToString(0,6, instructionBitEncoding);
-		if(opCode.equals(STOP))
+		if(!contains(VALID_OPCODES, opCode)) {
 			stop = true;
+		}
 		else if(contains(UTYPE, opCode))
 			generateUType(instructionBitEncoding, opCode);
 		else if(contains(UJTYPE,opCode)) 
@@ -34,8 +37,25 @@ public class Instruction {
 			generateRType(instructionBitEncoding, opCode);
 		else
 			generateIType(instructionBitEncoding, opCode);
-		memory = (opCode.equals(STORE) || opCode.equals(LOAD));
+		if(instruction == null) {
+			stop = true;
+		}
+		memory = (opCode.equals(LOAD));
+		memLoaded = !memory;
+		bubble = false;
 		conditionMet = true;
+		stage = Processor.FETCH;
+	}
+	@Override
+	public String toString() {
+		if(bubble)
+			return "BUBBLE";
+		return "Instruction [instruction=" + instruction + "]";
+	}
+	public Instruction(String stage) {
+		this.stage = stage;
+		bubble = true;
+		instruction = "BUBBLE";
 	}
 	private void generateIType(boolean[] instructionBitEncoding, String opCode) {
 		immediate = new boolean[12];
@@ -55,15 +75,15 @@ public class Instruction {
 		case MISC_MEM:
 			instruction = MISC_MEM_FUNCT3_TO_FUNCTION.get(funct3);
 			break;
-		case SYSYEM:
-			instruction = SYSYEM_FUNCT3_TO_FUNCTION.get(funct3);
+		case SYSTEM:
+			instruction = SYSTEM_FUNCT3_TO_FUNCTION.get(funct3);
 			break;
 		case JALR:
 			instruction = JALR_FUNCT3_TO_FUNCTION.get(funct3);
 			break;
 		}
 		if(instruction.contains("|"))
-			instruction = (!instructionBitEncoding[31]) ? instruction.substring(0, instruction.indexOf("|")) : instruction.substring(instruction.indexOf("|")+1);
+			instruction = (!instructionBitEncoding[30]) ? instruction.substring(0, instruction.indexOf("|")) : instruction.substring(instruction.indexOf("|")+1);
 		String Rd = getRegister(7,11,instructionBitEncoding); 
 		System.out.println(Rd);
 		String Rs1 = getRegister(15,19,instructionBitEncoding);
@@ -83,7 +103,7 @@ public class Instruction {
 			instruction = OP_32_FUNCT3_TO_FUNCTION.get(funct3);
 		}
 		if(instruction.contains("|"))
-			instruction = (!instructionBitEncoding[31]) ? instruction.substring(0, instruction.indexOf("|")) : instruction.substring(instruction.indexOf("|")+1);
+			instruction = (!instructionBitEncoding[30]) ? instruction.substring(0, instruction.indexOf("|")) : instruction.substring(instruction.indexOf("|")+1);
 		String Rd = getRegister(7,11,instructionBitEncoding); 
 		String Rs1 = getRegister(15,19,instructionBitEncoding);
 		String Rs2 = getRegister(20,24,instructionBitEncoding);
@@ -123,6 +143,7 @@ public class Instruction {
 			instruction = BRANCH_FUNCT3_TO_FUNCTION.get(funct3);
 			break;
 		}
+		branch = true;
 		String Rs1 = getRegister(15,19,instructionBitEncoding);
 		String Rs2 = getRegister(20,24,instructionBitEncoding);
 		instruction = correctInstruction(instruction, instructionBitEncoding);
@@ -197,15 +218,15 @@ public class Instruction {
 	public static final String LOAD = "1100000";
 	public static final String OP_IMM = "1100100";
 	public static final String MISC_MEM = "1111000";
-	public static final String SYSYEM = "1100111";
+	public static final String SYSTEM = "1100111";
 	public static final String JALR = "1110011";
-
+	public static final String[] VALID_OPCODES = {LUI, AUIPC, JAL, BRANCH, STORE, OP, OP_32, OP_32_IMM, LOAD, OP_IMM, MISC_MEM, SYSTEM, JALR};
 	public static final String[] UTYPE = {LUI, AUIPC};
 	public static final String[] UJTYPE = {JAL};
 	public static final String[] SBTYPE = {BRANCH};
 	public static final String[] STYPE = {STORE};
 	public static final String[] RTYPE = {OP, OP_32 };
-	public static final String[] ITYPE = { OP_32_IMM, LOAD, OP_IMM, MISC_MEM, SYSYEM, JALR};
+	public static final String[] ITYPE = { OP_32_IMM, LOAD, OP_IMM, MISC_MEM, SYSTEM, JALR};
 
 	//Values are flipped as the zero index comes first
 	public static final String ZERO = "000";
@@ -216,6 +237,9 @@ public class Instruction {
 	public static final String FIVE = "101";
 	public static final String SIX = "011";
 	public static final String SEVEN = "111";
+	
+	public static final String[] NON_TRADITIONAL_PC = {JALR, JAL, BRANCH};
+	public static final String[] DATA_STALL = {LOAD};
 
 	public static void generateMaps() {
 		U_OPCODE_TO_INSTRUCTION = new HashMap<String, String> ();
@@ -282,17 +306,17 @@ public class Instruction {
 		MISC_MEM_FUNCT3_TO_FUNCTION.put(ZERO, "FENCE");
 		MISC_MEM_FUNCT3_TO_FUNCTION.put(ONE, "FENCE.I");
 
-		SYSYEM_FUNCT3_TO_FUNCTION = new HashMap<String, String> ();
-		SYSYEM_FUNCT3_TO_FUNCTION.put(ZERO, "ECALL*EBREAK");
-		SYSYEM_FUNCT3_TO_FUNCTION.put(ONE, "CSRRW");
-		SYSYEM_FUNCT3_TO_FUNCTION.put(TWO, "CSRRS");
-		SYSYEM_FUNCT3_TO_FUNCTION.put(THREE, "CSRRC");
-		SYSYEM_FUNCT3_TO_FUNCTION.put(FIVE, "CSRRWI");
-		SYSYEM_FUNCT3_TO_FUNCTION.put(SIX, "CSRRSI");	
-		SYSYEM_FUNCT3_TO_FUNCTION.put(SEVEN, "CSRRCI");
+		SYSTEM_FUNCT3_TO_FUNCTION = new HashMap<String, String> ();
+		SYSTEM_FUNCT3_TO_FUNCTION.put(ZERO, "ECALL*EBREAK");
+		SYSTEM_FUNCT3_TO_FUNCTION.put(ONE, "CSRRW");
+		SYSTEM_FUNCT3_TO_FUNCTION.put(TWO, "CSRRS");
+		SYSTEM_FUNCT3_TO_FUNCTION.put(THREE, "CSRRC");
+		SYSTEM_FUNCT3_TO_FUNCTION.put(FIVE, "CSRRWI");
+		SYSTEM_FUNCT3_TO_FUNCTION.put(SIX, "CSRRSI");	
+		SYSTEM_FUNCT3_TO_FUNCTION.put(SEVEN, "CSRRCI");
 
 		JALR_FUNCT3_TO_FUNCTION = new HashMap<String, String> ();
-		SYSYEM_FUNCT3_TO_FUNCTION.put(ZERO, "JALR");
+		SYSTEM_FUNCT3_TO_FUNCTION.put(ZERO, "JALR");
 	}
 	//end - start + 1 == 5
 	public static String getRegister(int start, int end, boolean[] bitArray) {
