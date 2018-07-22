@@ -61,6 +61,7 @@ public class ALU {
 	}
 	
 	public static boolean[] IADD(boolean[] a, boolean[] b) {
+		System.out.println("ADD " +(new DoubleWord(a)).calculateValueSigned()+" "+ (new DoubleWord(b)).calculateValueSigned());
 		boolean[] c = new boolean[a.length];
 		boolean carry = false;
 		for(int pos = 0; pos < a.length; pos++) {
@@ -70,6 +71,7 @@ public class ALU {
 			}
 			carry = carryTemp;
 		}
+		System.out.println("ALU output: "+ALU.calculateValueSigned(c));
 		return c;
 	}
 	// a - b
@@ -151,7 +153,7 @@ public class ALU {
 		boolean[] c = new boolean[targetSize];
 		boolean sign = a[a.length-1];
 		System.arraycopy(a, 0, c, 0, a.length);
-		if(U && !sign) {
+		if(U || !sign) {
 			return c;
 		}
 		for(int pos = a.length; pos < targetSize; pos++)
@@ -229,6 +231,16 @@ public class ALU {
 			System.out.println("OF:" + OF);
 			System.out.println("ZF:" + ZF);
 		}
+	}
+	
+	public static long calculateValueSigned(boolean[] bitArray) {
+		long val = (bitArray[bitArray.length-1]) ? ((long)Math.pow(-2, bitArray.length-1)) : 0;
+		for(int pos = 0; pos < bitArray.length-1; pos++) {
+			if(bitArray[pos]) {
+				val+= ((long)Math.pow(2, pos));
+			}
+		}
+		return val;
 	}
 
 	public static boolean[] NEGATIVE_EIGHT = longToBitArray(-8, 64);

@@ -75,10 +75,13 @@ public class InstructionBuilder {
 
 		INSTRUCTION_TO_OPCODE.put("JALR", Instruction.JALR);
 
+		INSTRUCTION_TO_OPCODE.put("HALT", Instruction.STOP);
+		
 		INSTRUCTION_TO_FUNCT7.put("SUB", "0000010");
 		INSTRUCTION_TO_FUNCT7.put("SRA", "0000010");
 		INSTRUCTION_TO_FUNCT7.put("SUBW", "0000010");
 		INSTRUCTION_TO_FUNCT7.put("SRAW", "0000010");
+		
 	}
 
 	public static String getFunct3(String function, HashMap<String, String> map) {
@@ -109,6 +112,9 @@ public class InstructionBuilder {
 	//Precondition: Rd, Rs1, Rs2, and imm already converted to bitStrings
 	public static boolean[] generateInstruction(String function, boolean[] Rd, boolean[] Rs1, boolean[] Rs2, boolean[] imm) {
 		String opCode = INSTRUCTION_TO_OPCODE.get(function);
+		if(opCode.equals(Instruction.STOP)) {
+			return new boolean[32];
+		}
 		if(Instruction.contains(Instruction.UTYPE, opCode))
 			return generateUType(opCode, Rd, imm);
 

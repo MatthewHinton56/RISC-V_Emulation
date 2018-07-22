@@ -42,10 +42,19 @@ public class Compiler {
 					output += memType(l, firstWord.toUpperCase());
 				else if(opCode.equals(Instruction.BRANCH))
 					output += branchType(l, firstWord.toUpperCase());
+				else if(opCode.equals(Instruction.STOP))
+					output += haltType(l, firstWord.toUpperCase());
 			}
 			output+= " "+l.line+"\n";
 		}
 		return output;
+	}
+
+	private static String haltType(Line l, String instruction) {
+		boolean[] instructionArray = InstructionBuilder.generateInstruction(instruction, null, null, null, null);
+		Word w = new Word(instructionArray);
+		COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
+		return w.generateHex();
 	}
 
 	private static String branchType(Line l, String instruction) {
@@ -57,7 +66,7 @@ public class Compiler {
 			System.out.println(l.address);
 			val = (Long.parseLong(TAG_TO_ADDRESS.get(l.splitLine[3]),16) - Long.parseLong(l.address,16)) + "";
 		} else if(l.splitLine[3].contains("0x")) {
-			val = l.splitLine[3].substring(2);
+			val = ""+Long.parseLong(l.splitLine[3].substring(2),16);
 		} else {
 			val = l.splitLine[3];
 		}
@@ -78,12 +87,12 @@ public class Compiler {
 
 	private static String memType(Line l, String instruction) {
 		String rDRs2 = l.splitLine[1].substring(1);
-		String rs1 = l.splitLine[2].substring(l.splitLine[2].indexOf("(")+2, l.splitLine[2].indexOf(")"));
-		String val = l.splitLine[2].substring(0, l.splitLine[2].indexOf("("));
+		String rs1 = l.splitLine[2].substring(1);
+		String val = l.splitLine[3];
 		if(TAG_TO_ADDRESS.containsKey(val)) {
 			val = (Long.parseLong(TAG_TO_ADDRESS.get(val),16) - Long.parseLong(l.address,16)) + "";
 		} else if(val.contains("0x")) {
-			val = val.substring(2);
+			val = ""+Long.parseLong(val.substring(2),16);
 		} else if(val.length() == 0) {
 			val = "0";
 		}
@@ -91,6 +100,7 @@ public class Compiler {
 		boolean[] rs1Array = ALU.longToBitArrayUnsigned(Long.parseLong(rs1), 5);
 		String imm = Long.parseLong(val)%((long)(Math.pow(2, 12)))  +"";
 		boolean[] immArray = ALU.longToBitArray(Long.parseLong(imm), 12);
+		System.out.println(instruction+" "+ALU.calculateValueSigned(immArray));
 		boolean[] instructionArray;
 		switch(InstructionBuilder.INSTRUCTION_TO_OPCODE.get(instruction)) {
 		case Instruction.LOAD:
@@ -112,7 +122,7 @@ public class Compiler {
 		if(TAG_TO_ADDRESS.containsKey(l.splitLine[2])) {
 			val = (Long.parseLong(TAG_TO_ADDRESS.get(l.splitLine[2])) - Long.parseLong(l.address,16)) + "";
 		} else if(l.splitLine[2].contains("0x")) {
-			val = l.splitLine[2].substring(2);
+			val = ""+Long.parseLong(l.splitLine[2].substring(2),16);
 		} else {
 			val = l.splitLine[2];
 		}
@@ -151,7 +161,7 @@ public class Compiler {
 		if(TAG_TO_ADDRESS.containsKey(l.splitLine[3])) {
 			val = (Long.parseLong(TAG_TO_ADDRESS.get(l.splitLine[3])) - Long.parseLong(l.address,16)) + "";
 		} else if(l.splitLine[3].contains("0x")) {
-			val = l.splitLine[3].substring(2);
+			val = ""+Long.parseLong(l.splitLine[3].substring(2),16);
 		} else {
 			val = l.splitLine[3];
 		}
@@ -246,6 +256,7 @@ public class Compiler {
 		Scanner scan = new Scanner(input);
 		while(scan.hasNextLine()) {
 			String line = scan.nextLine();
+			line = lineCorrection(line);
 			String[] lineSplit = split(line);
 			String firstWord = lineSplit[0];
 			if(firstWord.startsWith("."))
@@ -255,6 +266,18 @@ public class Compiler {
 			else 
 				address = instruction(firstWord, lineSplit, address, line);
 		}
+	}
+
+	private static String lineCorrection(String line) {
+		if(line.contains("(")) {
+			String[] splitLine = split(line);
+			String instruction = splitLine[0];
+			String rDRs2 = splitLine[1];
+			String rs1 = splitLine[2].substring(splitLine[2].indexOf("(")+1, splitLine[2].indexOf(")"));
+			String imm = splitLine[2].substring(0, splitLine[2].indexOf("("));
+			return instruction + " " + rDRs2 + ", " + rs1 +", " + imm;
+		}
+		return line;
 	}
 
 	private static long tag(String tag, String[] lineSplit, long address, String line) {

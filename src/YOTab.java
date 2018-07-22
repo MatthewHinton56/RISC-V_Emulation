@@ -3,6 +3,7 @@ import java.util.Scanner;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Rectangle2D;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ScrollPane;
@@ -17,11 +18,11 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Screen;
 
 public class YOTab extends Tab {
-	
+
 	String fileName;
 	Button step,run,initialize, clockPulse;
 	TextArea area;
-	ScrollPane pane, displayPane;
+	ScrollPane pane, displayPane,memDisplayScrollPane;
 	BorderPane border;
 	GridPane registerDisplay;
 	GridPane memDisplay;
@@ -54,7 +55,7 @@ public class YOTab extends Tab {
 			public void handle(ActionEvent arg0) {
 				YOTab.this.refresh();
 			}
-			
+
 		});
 		halfWordButton.setToggleGroup(group);
 		halfWordButton.setOnAction(new EventHandler<ActionEvent>() {
@@ -63,7 +64,7 @@ public class YOTab extends Tab {
 			public void handle(ActionEvent arg0) {
 				YOTab.this.refresh();
 			}
-			
+
 		});
 		wordButton.setToggleGroup(group);
 		wordButton.setOnAction(new EventHandler<ActionEvent>() {
@@ -72,7 +73,7 @@ public class YOTab extends Tab {
 			public void handle(ActionEvent arg0) {
 				YOTab.this.refresh();
 			}
-			
+
 		});
 		doubleWordButton.setToggleGroup(group);
 		doubleWordButton.setOnAction(new EventHandler<ActionEvent>() {
@@ -81,13 +82,15 @@ public class YOTab extends Tab {
 			public void handle(ActionEvent arg0) {
 				YOTab.this.refresh();
 			}
-			
+
 		});
 		doubleWordButton.setSelected(true);
 		memDisplay.add(byteButton, 0, 0);
 		memDisplay.add(halfWordButton, 1, 0);
 		memDisplay.add(wordButton, 0, 1);
 		memDisplay.add(doubleWordButton, 1, 1);
+		memDisplayScrollPane = new ScrollPane(memDisplay);
+		memDisplayScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
 		refresh();
 		displayPane = new ScrollPane(registerDisplay);
 		displayPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -133,16 +136,21 @@ public class YOTab extends Tab {
 		border.setBottom(box);
 		border.setLeft(pane);
 		border.setRight(displayPane);
-		border.setCenter(memDisplay);
+		border.setCenter(memDisplayScrollPane);
 		this.setContent(border);
 		this.setText(fileName);
 	}
-	
+
 	public void refresh() {
 		registerDisplay.getChildren().clear();
 		int row = 0;
+		registerDisplay.add(new TextField("Pipeline info"), 0, row);
+		row++;
 		registerDisplay.add(new TextField("Status"), 0, row);
 		registerDisplay.add(new TextField(Processor.status), 1, row);
+		row++;
+		row = pipeLineStages(row);
+		registerDisplay.add(new TextField("Register info"), 0, row);
 		row++;
 		for(String register: Processor.registerFile.keySet()) {
 			registerDisplay.add(new TextField(register), 0, row);
@@ -182,6 +190,69 @@ public class YOTab extends Tab {
 		}
 	}
 
+	private int pipeLineStages(int row) {
+		DoubleWord fetchAddress = Processor.pcAddresses[0];
+		System.out.println(fetchAddress);
+		registerDisplay.add(new TextField("Fetch"), 0, row);
+		if(fetchAddress == null || !validAddress(fetchAddress)) {
+			registerDisplay.add(new TextField("BUBBLE"), 1, row);
+		} else {
+			registerDisplay.add(new TextField("0x"+fetchAddress.displayToString()), 1, row);
+		}
+		row++;
+		
+		DoubleWord decodeAddress = Processor.pcAddresses[1];
+		registerDisplay.add(new TextField("Decode"), 0, row);
+		if(decodeAddress == null) {
+			registerDisplay.add(new TextField("BUBBLE"), 1, row);
+		} else {
+			registerDisplay.add(new TextField("0x"+decodeAddress.displayToString()), 1, row);
+		}
+		row++;
+		
+		DoubleWord executeAddress = Processor.pcAddresses[2];
+		registerDisplay.add(new TextField("Execute"), 0, row);
+		if(executeAddress == null) {
+			registerDisplay.add(new TextField("BUBBLE"), 1, row);
+		} else {
+			registerDisplay.add(new TextField("0x"+executeAddress.displayToString()), 1, row);
+		}
+		row++;
+		
+		DoubleWord memoryAddress = Processor.pcAddresses[3];
+		registerDisplay.add(new TextField("Memory"), 0, row);
+		if(memoryAddress == null) {
+			registerDisplay.add(new TextField("BUBBLE"), 1, row);
+		} else {
+			registerDisplay.add(new TextField("0x"+memoryAddress.displayToString()), 1, row);
+		}
+		row++;
+		
+		DoubleWord writeBackAddress = Processor.pcAddresses[4];
+		registerDisplay.add(new TextField("Write Back"), 0, row);
+		if(writeBackAddress == null) {
+			registerDisplay.add(new TextField("BUBBLE"), 1, row);
+		} else {
+			registerDisplay.add(new TextField("0x"+writeBackAddress.displayToString()), 1, row);
+		}
+		row++;
+		return row;
+	}
+	
+	private boolean validAddress(DoubleWord address) {
+		Scanner scan = new Scanner(inputText);
+		while(scan.hasNextLine()) {
+			String line = scan.nextLine();
+			String addressString = line.substring(line.indexOf("x")+1, line.indexOf(":"));
+			String restOfLine = line.substring(line.indexOf(":")+1);
+			DoubleWord addressLine = new DoubleWord(Long.parseLong(addressString, 16));
+			System.out.println(addressLine.displayToString());
+			if(addressLine.equals(address) && !restOfLine.contains(":") && !restOfLine.contains("."))
+				return true;
+		}
+		return false;
+	}
+
 	private String modifiedDisplay() {
 		String output = "";
 		Scanner scan = new Scanner(inputText);
@@ -189,24 +260,38 @@ public class YOTab extends Tab {
 			String line = scan.nextLine();
 			String addressString = line.substring(line.indexOf("x")+1, line.indexOf(":"));
 			DoubleWord address = new DoubleWord(Long.parseLong(addressString, 16));
-			if(Processor.pcAddresses[Processor.FETCH_ADDRESS_POSITION] != null && Processor.pcAddresses[Processor.FETCH_ADDRESS_POSITION].equals(address))
-				output+= " F ";
-			else if(Processor.pcAddresses[Processor.DECODE_ADDRESS_POSITION] != null && Processor.pcAddresses[Processor.DECODE_ADDRESS_POSITION].equals(address))
-				output+= " D ";
-			else if(Processor.pcAddresses[Processor.EXECUTE_ADDRESS_POSITION] != null && Processor.pcAddresses[Processor.EXECUTE_ADDRESS_POSITION].equals(address))
-				output+= " E ";
-			else if(Processor.pcAddresses[Processor.MEMORY_ADDRESS_POSITION] != null && Processor.pcAddresses[Processor.MEMORY_ADDRESS_POSITION].equals(address))
-				output+= " M ";
-			else if(Processor.pcAddresses[Processor.WRITE_BACK_ADDRESS_POSITION] != null && Processor.pcAddresses[Processor.WRITE_BACK_ADDRESS_POSITION].equals(address))
-				output+= " W ";
-			else 
-				output+= "   ";
-			output+=line+"\n";
+			String restOfLine = line.substring(line.indexOf(":")+1);
+			if(!restOfLine.contains(":") && !restOfLine.contains(".")) {
+				if(Processor.pcAddresses[Processor.FETCH_ADDRESS_POSITION] != null && Processor.pcAddresses[Processor.FETCH_ADDRESS_POSITION].equals(address))
+					output += "F";
+				else 
+					output += "\u2002";
+				if(Processor.pcAddresses[Processor.DECODE_ADDRESS_POSITION] != null && Processor.pcAddresses[Processor.DECODE_ADDRESS_POSITION].equals(address))
+					output += "D";
+				else 
+					output += "\u2002";
+				if(Processor.pcAddresses[Processor.EXECUTE_ADDRESS_POSITION] != null && Processor.pcAddresses[Processor.EXECUTE_ADDRESS_POSITION].equals(address))
+					output += "E";
+				else 
+					output += "\u2002";
+				if(Processor.pcAddresses[Processor.MEMORY_ADDRESS_POSITION] != null && Processor.pcAddresses[Processor.MEMORY_ADDRESS_POSITION].equals(address))
+					output += "M";
+				else 
+					output += "\u2002";
+				if(Processor.pcAddresses[Processor.WRITE_BACK_ADDRESS_POSITION] != null && Processor.pcAddresses[Processor.WRITE_BACK_ADDRESS_POSITION].equals(address))
+					output+= "W";
+				else 
+					output += "\u2002";
+			} else {
+				output += "\u2002\u2002\u2002\u2002\u2002";
+			}
+
+			output+=" "+line+"\n";
 		}
 		scan.close();
 		return output;
 	}
-	
-	
-	
+
+
+
 }
