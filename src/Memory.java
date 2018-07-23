@@ -58,6 +58,7 @@ public class Memory {
 	public static HalfWord loadHalfWord(long position) {
 		if(position % 2 != 0) {
 			Processor.status = "HLT";
+			Processor.stopCount = 1;
 			return null;
 		}
 		String immediate = "";

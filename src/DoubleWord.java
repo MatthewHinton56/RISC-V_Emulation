@@ -73,7 +73,7 @@ public class DoubleWord extends LittleEndian{
 	
 	public DoubleWord(LittleEndian input, boolean signed) {
 		super(DOUBLEWORDSIZE);
-		boolean[] tempBitArray = ALU.signExtension(input.bitArray, signed, DOUBLEWORDSIZE);
+		boolean[] tempBitArray = ALU.signExtension(input.bitArray, !signed, DOUBLEWORDSIZE);
 		System.arraycopy(tempBitArray, 0, bitArray, 0, 64);
 	}
 	

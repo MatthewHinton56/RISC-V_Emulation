@@ -87,7 +87,7 @@ public class ALU {
 
 
 	public static boolean[] shiftLeft(boolean[] a, int shamt) {
-		System.out.println("here");
+		System.out.println("here " +shamt);
 		boolean[] c = new boolean[a.length];
 		for(int pos = c.length-1; pos >= 0; pos--) {
 			if(pos + shamt < c.length)
@@ -105,7 +105,7 @@ public class ALU {
 		}
 		if(!logic) {
 			for(int pos = 0; pos < shamt; pos++)
-				c[c.length-pos] = sign;
+				c[c.length-pos-1] = sign;
 		}
 		return c;
 	}
@@ -204,7 +204,7 @@ public class ALU {
 	public static int bitArrayToInt(boolean[] bitArray) {
 		int val = 0;
 		for(int i = 0; i < bitArray.length; i++) {
-			val += (bitArray[0]) ? (int)Math.pow(2, i) : 0;
+			val += (bitArray[i]) ? (int)Math.pow(2, i) : 0;
 		}
 		return val;
 	}
@@ -244,5 +244,13 @@ public class ALU {
 	}
 
 	public static boolean[] NEGATIVE_EIGHT = longToBitArray(-8, 64);
+
+	public static String bitString(boolean[] bitArray) {
+		String s = "";
+		for(int i = 0; i < bitArray.length; i++) {
+			s = ((bitArray[i]) ? "1" : "0") + s;
+		}
+		return s;
+	}
 
 }

@@ -349,6 +349,7 @@ public class Processor {
 		case "SLLI":
 			constant = new boolean[6];
 			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 6);
+			System.out.println(ALU.bitString(currentInstruction.immediate));
 			valE = currentInstruction.RS1Val.shiftLeft(constant);
 			currentInstruction.EVal = valE; 
 			break;
@@ -515,7 +516,18 @@ public class Processor {
 		}
 		System.out.println(pcAddresses[0]);
 		System.out.println("finished");
+		stopCount = -1;
+		registerFile.reset();
+		JALRStall = false;
+		stopFetching = false;
+		JALRTempStall = false;
 	}
+	
+	public static void clear() {
+		Memory.memory.clear();
+		clearArrays();
+	}
+	
 
 	private static void clearArrays() {
 		for(int i = 0; i < pcAddresses.length; i++)

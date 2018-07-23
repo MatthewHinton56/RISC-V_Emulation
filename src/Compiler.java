@@ -98,7 +98,7 @@ public class Compiler {
 		}
 		boolean[] rDRS2Array = ALU.longToBitArrayUnsigned(Long.parseLong(rDRs2), 5);
 		boolean[] rs1Array = ALU.longToBitArrayUnsigned(Long.parseLong(rs1), 5);
-		String imm = Long.parseLong(val)%((long)(Math.pow(2, 12)))  +"";
+		String imm = Long.parseLong(val)%((long)(Math.pow(2, 11)))  +"";
 		boolean[] immArray = ALU.longToBitArray(Long.parseLong(imm), 12);
 		System.out.println(instruction+" "+ALU.calculateValueSigned(immArray));
 		boolean[] instructionArray;
@@ -134,11 +134,11 @@ public class Compiler {
 
 		case Instruction.AUIPC:
 		case Instruction.LUI:
-			imm = Long.parseLong(val)%((long)(Math.pow(2, 20)))  +"";
+			imm = Long.parseLong(val)%((long)(Math.pow(2, 19)))  +"";
 			immArray = ALU.longToBitArray(Long.parseLong(imm), 20);
 			break;
 		default:
-			imm = Long.parseLong(val)%((long)(Math.pow(2, 21)))  +"";
+			imm = Long.parseLong(val)%((long)(Math.pow(2, 20)))  +"";
 			immArray = ALU.longToBitArray(Long.parseLong(imm), 21);
 			immArray[0] = false;
 			break;
@@ -166,7 +166,7 @@ public class Compiler {
 			val = l.splitLine[3];
 		}
 
-		String imm = Long.parseLong(val)%((long)(Math.pow(2, 12))) +"";
+		String imm = Long.parseLong(val)%((long)(Math.pow(2, 11))) +"";
 		boolean[] rDArray = ALU.longToBitArrayUnsigned(Long.parseLong(rD), 5);
 		boolean[] rs1Array = ALU.longToBitArrayUnsigned(Long.parseLong(rs1), 5);
 		boolean[] immArray = ALU.longToBitArray(Long.parseLong(imm), 12);

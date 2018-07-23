@@ -2,7 +2,7 @@ import java.util.Arrays;
 
 public class HalfWord extends LittleEndian{
 
-	public static final int HALFWORDSIZE = 32;
+	public static final int HALFWORDSIZE = 16;
 	
 	public HalfWord() {
 		super(HALFWORDSIZE);

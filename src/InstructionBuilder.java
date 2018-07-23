@@ -52,6 +52,11 @@ public class InstructionBuilder {
 		INSTRUCTION_TO_OPCODE.put("SLLW", Instruction.OP_32);
 		INSTRUCTION_TO_OPCODE.put("SRAW", Instruction.OP_32);
 		INSTRUCTION_TO_OPCODE.put("SRLW", Instruction.OP_32);
+		
+		INSTRUCTION_TO_OPCODE.put("SLLIW", Instruction.OP_32_IMM);
+		INSTRUCTION_TO_OPCODE.put("ADDIW", Instruction.OP_32_IMM);
+		INSTRUCTION_TO_OPCODE.put("SRAIW", Instruction.OP_32_IMM);
+		INSTRUCTION_TO_OPCODE.put("SRLIW", Instruction.OP_32_IMM);
 
 		INSTRUCTION_TO_OPCODE.put("LB", Instruction.LOAD);
 		INSTRUCTION_TO_OPCODE.put("LH", Instruction.LOAD);

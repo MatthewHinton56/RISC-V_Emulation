@@ -154,7 +154,10 @@ public class YOTab extends Tab {
 		row++;
 		for(String register: Processor.registerFile.keySet()) {
 			registerDisplay.add(new TextField(register), 0, row);
-			registerDisplay.add(new TextField("0x"+Processor.registerFile.get(register).displayToString()), 1, row);
+			if(Processor.registerFile.get(register) != null)
+				registerDisplay.add(new TextField("0x"+Processor.registerFile.get(register).displayToString()), 1, row);
+			else
+				registerDisplay.add(new TextField("N/A"), 1, row);
 			row++;
 		}
 		String outputDisplay = modifiedDisplay();
