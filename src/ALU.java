@@ -111,6 +111,10 @@ public class ALU {
 	}
 
 	public static boolean LessThan(boolean[] a, boolean[] b, boolean U) {
+		if(!U && ALU.calculateValueSigned(a) == ALU.T_MIN_Calculator(a) && ALU.calculateValueSigned(b) != ALU.T_MIN_Calculator(b))
+			return true;
+		if(!U && ALU.calculateValueSigned(a) != ALU.T_MIN_Calculator(a) && ALU.calculateValueSigned(b) == ALU.T_MIN_Calculator(b))
+			return false;
 		SUB(a,b);
 		if(U)
 			return CF;
@@ -118,6 +122,12 @@ public class ALU {
 	}
 	
 	public static boolean GreaterThanOrEqual(boolean[] a, boolean[] b, boolean U) {
+		if(!U && ALU.calculateValueSigned(a) == ALU.T_MIN_Calculator(a) && ALU.calculateValueSigned(b) != ALU.T_MIN_Calculator(b))
+			return false;
+		if(!U && ALU.calculateValueSigned(a) != ALU.T_MIN_Calculator(a) && ALU.calculateValueSigned(b) == ALU.T_MIN_Calculator(b))
+			return true;
+		if(ALU.calculateValueSigned(a) == ALU.T_MIN_Calculator(a) && ALU.calculateValueSigned(b) == ALU.T_MIN_Calculator(b))
+			return true;
 		SUB(a,b);
 		if(U)
 			return !CF;
@@ -252,5 +262,11 @@ public class ALU {
 		}
 		return s;
 	}
+	
+	public static long T_MIN_Calculator(boolean[] bitArray) {
+		return (long)(Math.pow(2, bitArray.length-1)*-1);
+	}
+	
+	
 
 }

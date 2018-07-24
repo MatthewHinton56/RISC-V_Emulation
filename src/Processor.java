@@ -48,6 +48,8 @@ public class Processor {
 				pcAddresses[DECODE_ADDRESS_POSITION] = null;
 				pcAddresses[FETCH_ADDRESS_POSITION] = newPredictedValP;
 				instructionStages[DECODE_INSTRUCTION_POSITION] = new Instruction(DECODE);
+				stopFetching = false;
+				stopCount = -1;
 			}
 		}
 		pcAddresses[MEMORY_ADDRESS_POSITION] = pcAddresses[EXECUTE_ADDRESS_POSITION];
@@ -292,24 +294,24 @@ public class Processor {
 			currentInstruction.EVal = pcAddresses[EXECUTE_ADDRESS_POSITION].add(c);
 			break;
 		case "SLT":
-			currentInstruction.EVal = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? new DoubleWord(1) : new DoubleWord();
+			currentInstruction.EVal = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,false)) ? new DoubleWord(1) : new DoubleWord();
 			break;
 		case "SLTU":
-			currentInstruction.EVal = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,false)) ? new DoubleWord(1) : new DoubleWord();
+			currentInstruction.EVal = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? new DoubleWord(1) : new DoubleWord();
 			break;
 		case "SLTI":
 			constant = new boolean[12];
 			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
 			constant = ALU.signExtension(constant, false, 64);
 			c = new DoubleWord(constant);
-			currentInstruction.EVal = (currentInstruction.RS1Val.lessThan(c,true)) ? new DoubleWord(1) : new DoubleWord();
+			currentInstruction.EVal = (currentInstruction.RS1Val.lessThan(c,false)) ? new DoubleWord(1) : new DoubleWord();
 			break;
 		case "SLTIU":
 			constant = new boolean[12];
 			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
 			constant = ALU.signExtension(constant, false, 64);
 			c = new DoubleWord(constant);
-			currentInstruction.EVal = (currentInstruction.RS1Val.lessThan(c,false)) ? new DoubleWord(1) : new DoubleWord();
+			currentInstruction.EVal = (currentInstruction.RS1Val.lessThan(c,true)) ? new DoubleWord(1) : new DoubleWord();
 			break;
 		case "ADDW":
 			w = currentInstruction.RS1Val.getWord(0).add(currentInstruction.RS2Val.getWord(0));
