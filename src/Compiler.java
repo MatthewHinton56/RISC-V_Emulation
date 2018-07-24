@@ -355,6 +355,7 @@ public class Compiler {
 			String originalLine = scan.nextLine();
 			if(originalLine.length() > 0) {
 				String line = lineCorrection(originalLine);
+				if(line.length() > 0) {
 				String[] lineSplit = split(line);
 				String firstWord = lineSplit[0];
 				if(firstWord.startsWith("."))
@@ -363,12 +364,15 @@ public class Compiler {
 					address = tag(firstWord, lineSplit, address, line, originalLine);
 				else 
 					address = instruction(firstWord, lineSplit, address, line, originalLine);
+				}
 			}
 		}
 		scan.close();
 	}
 
 	private static String lineCorrection(String line) {
+		if(line.contains("#"))
+			line = line.substring(line.indexOf("#"));
 		if(line.contains("(")) {
 			String[] splitLine = split(line);
 			String instruction = splitLine[0];
