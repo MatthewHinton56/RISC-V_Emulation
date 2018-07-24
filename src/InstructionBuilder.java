@@ -10,7 +10,7 @@ public class InstructionBuilder {
 	private static void generateMaps() {
 		INSTRUCTION_TO_OPCODE.put("LUI", Instruction.LUI);
 
-		INSTRUCTION_TO_OPCODE.put("LUI", Instruction.AUIPC);
+		INSTRUCTION_TO_OPCODE.put("AUIPC", Instruction.AUIPC);
 
 		INSTRUCTION_TO_OPCODE.put("JAL", Instruction.JAL);
 
@@ -260,7 +260,7 @@ public class InstructionBuilder {
 		boolean[] instruct = new boolean[32];
 		System.arraycopy(opCodeBit, 0, instruct, 0, 7);
 		System.arraycopy(Rd, 0, instruct, 7, 5);
-		System.arraycopy(imm, 0, instruct, 0, 20);
+		System.arraycopy(imm, 0, instruct, 12, 20);
 		return instruct;
 
 	}
