@@ -5,12 +5,14 @@ public class Instruction {
 		generateMaps();
 		generateExtensionMap();
 		generateMExtensionMap();
+		generateInstructionArchetypes();
 	}
 	public static HashMap<String, String> U_OPCODE_TO_INSTRUCTION, UJ_OPCODE_TO_INSTRUCTION;
 	public static HashMap<String, String> BRANCH_FUNCT3_TO_FUNCTION, STORE_FUNCT3_TO_FUNCTION,
 	OP_FUNCT3_TO_FUNCTION, OP_32_FUNCT3_TO_FUNCTION, OP_32_IMM_FUNCT3_TO_FUNCTION, LOAD_FUNCT3_TO_FUNCTION, OP_IMM_FUNCT3_TO_FUNCTION,
 	MISC_MEM_FUNCT3_TO_FUNCTION, SYSTEM_FUNCT3_TO_FUNCTION, JALR_FUNCT3_TO_FUNCTION, MOP_32_FUNCT3_TO_FUNCTION, MOP_FUNCT3_TO_FUNCTION;
-	public static HashMap<String,String> INSTRUCTION_TO_EXTENSION;
+	public static HashMap<String, String> INSTRUCTION_TO_EXTENSION;
+	public static HashMap<String, String> INSTRUCTION_TO_ARCHETYPE, INSTRUCTION_TO_ARCHETYPE_M;
 
 	boolean[] immediate;
 	String Rd, Rs1, Rs2;
@@ -368,6 +370,7 @@ public class Instruction {
 	
 	public static HashMap<String, String> getOpMap(String instruction) {
 		String opCode = InstructionBuilder.INSTRUCTION_TO_OPCODE.get(instruction);
+		System.out.println(instruction+" "+ opCode);
 		if(opCode.equals(OP)) {
 			switch(getExtension(instruction)) {
 			case "M":
@@ -403,4 +406,90 @@ public class Instruction {
 	public static boolean isMType(String instruction) {
 		return Instruction.contains(M_EXTENSION_INSTRUCTION, instruction);
 	}
+	
+	private static void generateInstructionArchetypes() {
+		INSTRUCTION_TO_ARCHETYPE = new HashMap<String, String> ();
+		INSTRUCTION_TO_ARCHETYPE.put("ADD", "add rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE.put("ADDW", "addw rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE.put("ADDI", "addi rd, rs1, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("ADDIW", "addiw rd, rs1, imm");
+		
+		INSTRUCTION_TO_ARCHETYPE.put("AND", "and rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE.put("ANDI", "andi rd, rs1, imm");
+		
+		INSTRUCTION_TO_ARCHETYPE.put("AUIPC", "auipc rd, imm");
+		
+		INSTRUCTION_TO_ARCHETYPE.put("BEQ", "beq rs1, rs2, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("BNE", "bne rs1, rs2, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("BGE", "bge rs1, rs2, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("BGEU", "bgeu rs1, rs2, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("BLT", "blt rs1, rs2, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("BLTU", "bltu rs1, rs2, imm");
+		
+		INSTRUCTION_TO_ARCHETYPE.put("JAL", "jal rd, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("JALR", "jalr rd, rs1, imm");
+		
+		INSTRUCTION_TO_ARCHETYPE.put("LB", "lb rd, rs1, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("LBU", "lbu rd, rs1, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("LH", "lh rd, rs1, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("LHU", "lhu rd, rs1, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("LW", "lw rd, rs1, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("LWU", "lwu rd, rs1, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("LD", "ld rd, rs1, imm");
+		
+		INSTRUCTION_TO_ARCHETYPE.put("SB", "sb rs2, rs1, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("SH", "sh rs2, rs1, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("SW", "sw rs2, rs1, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("SD", "sd rs2, rs1, imm");
+		
+		INSTRUCTION_TO_ARCHETYPE.put("LUI", "lui rd, imm");
+		
+		INSTRUCTION_TO_ARCHETYPE.put("OR", "or rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE.put("ORI", "ori rd, rs1, imm");
+		
+		INSTRUCTION_TO_ARCHETYPE.put("XOR", "xor rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE.put("XORI", "xori rd, rs1, imm");
+		
+		INSTRUCTION_TO_ARCHETYPE.put("SLL", "sll rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE.put("SLLW", "sllw rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE.put("SLLI", "slli rd, rs1, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("SLLIW", "slliw rd, rs1, imm");
+		
+		INSTRUCTION_TO_ARCHETYPE.put("SRA", "sra rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE.put("SRAW", "sraw rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE.put("SRAI", "srai rd, rs1, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("SRAIW", "sraiw rd, rs1, imm");
+		
+		INSTRUCTION_TO_ARCHETYPE.put("SRL", "sra rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE.put("SRLW", "sraw rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE.put("SRLI", "srai rd, rs1, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("SRLIW", "sraiw rd, rs1, imm");
+		
+		INSTRUCTION_TO_ARCHETYPE.put("SLT", "slt rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE.put("SLTW", "sltw rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE.put("SLTI", "slti rd, rs1, imm");
+		INSTRUCTION_TO_ARCHETYPE.put("SLTIW", "sltiw rd, rs1, imm");
+		
+		INSTRUCTION_TO_ARCHETYPE.put("SUB", "sub rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE.put("SUBW", "subw rd, rs1, rs2");
+		
+		INSTRUCTION_TO_ARCHETYPE_M = new HashMap<String, String> ();
+		
+		INSTRUCTION_TO_ARCHETYPE_M.put("MUL", "mul rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE_M.put("MULH", "mulh rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE_M.put("MULHSU", "mulhsu rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE_M.put("MULHU", "mulhu rd, rs1, rs2");
+		
+		INSTRUCTION_TO_ARCHETYPE_M.put("DIV", "div rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE_M.put("DIVU", "divu rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE_M.put("DIVUW", "divuw rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE_M.put("DIVW", "divw rd, rs1, rs2");
+		
+		INSTRUCTION_TO_ARCHETYPE_M.put("REM", "rem rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE_M.put("REMU", "remu rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE_M.put("REMUW", "remuw rd, rs1, rs2");
+		INSTRUCTION_TO_ARCHETYPE_M.put("REMW", "remw rd, rs1, rs2");
+	}
+	
+	
 }

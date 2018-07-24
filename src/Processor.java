@@ -469,7 +469,7 @@ public class Processor {
 			currentInstruction.EVal = new DoubleWord(w,true);
 			break;
 		case "REMUW":
-			w = currentInstruction.RS1Val.getWord(0).div(currentInstruction.RS2Val.getWord(0), true, true);
+			w = currentInstruction.RS1Val.getWord(0).div(currentInstruction.RS2Val.getWord(0), false, true);
 			currentInstruction.EVal = new DoubleWord(w,true);
 			break;	
 		}

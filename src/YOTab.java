@@ -154,7 +154,7 @@ public class YOTab extends Tab {
 		for(String register: Processor.registerFile.keySet()) {
 			registerDisplay.add(new TextField(register), 0, row);
 			if(Processor.registerFile.get(register) != null)
-				registerDisplay.add(new TextField("0x"+Processor.registerFile.get(register).displayToString()), 1, row);
+				registerDisplay.add(new TextField(displayText(Processor.registerFile.get(register))), 1, row);
 			else
 				registerDisplay.add(new TextField("N/A"), 1, row);
 			row++;
@@ -186,7 +186,7 @@ public class YOTab extends Tab {
 			if(address % offset == 0) {
 				LittleEndian value = Memory.load(address, offset);
 				memDisplay.add(new TextField("0x"+Long.toHexString(address)), 0, row);
-				memDisplay.add(new TextField("0x"+value.displayToString()), 1, row);
+				memDisplay.add(new TextField(displayText(value)), 1, row);
 				row++;
 			}
 		}
@@ -297,6 +297,18 @@ public class YOTab extends Tab {
 		return output;
 	}
 
-
+	public static String displayText(LittleEndian val) {
+		switch(EmulatorMenuBar.displaySetting) {
+		case EmulatorMenuBar.SIGNED:
+			return (val.calculateValueSigned()+" ");
+		case EmulatorMenuBar.UNSIGNED:
+			return val.calculateValueUnSigned();
+		default:
+			return "0x"+val.displayToString();
+		}
+	}
+	
+	
+	
 
 }

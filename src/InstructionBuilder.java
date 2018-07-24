@@ -98,11 +98,11 @@ public class InstructionBuilder {
 		INSTRUCTION_TO_OPCODE.put("REM", Instruction.OP);
 		INSTRUCTION_TO_OPCODE.put("REMU", Instruction.OP);
 		
-		INSTRUCTION_TO_OPCODE.put("MUL", Instruction.OP_32);
-		INSTRUCTION_TO_OPCODE.put("DIV", Instruction.OP_32);
-		INSTRUCTION_TO_OPCODE.put("DIVU", Instruction.OP_32);
-		INSTRUCTION_TO_OPCODE.put("REM", Instruction.OP_32);
-		INSTRUCTION_TO_OPCODE.put("REMU", Instruction.OP_32);
+		INSTRUCTION_TO_OPCODE.put("MULW", Instruction.OP_32);
+		INSTRUCTION_TO_OPCODE.put("DIVW", Instruction.OP_32);
+		INSTRUCTION_TO_OPCODE.put("DIVUW", Instruction.OP_32);
+		INSTRUCTION_TO_OPCODE.put("REMW", Instruction.OP_32);
+		INSTRUCTION_TO_OPCODE.put("REMUW", Instruction.OP_32);
 		
 		INSTRUCTION_TO_FUNCT7.put("MUL", "1000000");
 		INSTRUCTION_TO_FUNCT7.put("MULH", "1000000");
@@ -113,11 +113,11 @@ public class InstructionBuilder {
 		INSTRUCTION_TO_FUNCT7.put("REM", "1000000");
 		INSTRUCTION_TO_FUNCT7.put("REMU", "1000000");
 		
-		INSTRUCTION_TO_FUNCT7.put("MUL", "1000000");
-		INSTRUCTION_TO_FUNCT7.put("DIV", "1000000");
-		INSTRUCTION_TO_FUNCT7.put("DIVU", "1000000");
-		INSTRUCTION_TO_FUNCT7.put("REM", "1000000");
-		INSTRUCTION_TO_FUNCT7.put("REMU", "1000000");
+		INSTRUCTION_TO_FUNCT7.put("MULW", "1000000");
+		INSTRUCTION_TO_FUNCT7.put("DIVW", "1000000");
+		INSTRUCTION_TO_FUNCT7.put("DIVUW", "1000000");
+		INSTRUCTION_TO_FUNCT7.put("REMW", "1000000");
+		INSTRUCTION_TO_FUNCT7.put("REMUW", "1000000");
 	}
 
 	public static String getFunct3(String function, HashMap<String, String> map) {

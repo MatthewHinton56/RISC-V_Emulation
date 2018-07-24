@@ -15,6 +15,7 @@ public class YSTab extends Tab {
 	String fileName;
 	Button compile;
 	TextArea area;
+	TextArea output;
 	ScrollPane pane;
 	BorderPane border;
 	TabPane parent;
@@ -25,9 +26,12 @@ public class YSTab extends Tab {
 		this.parent = parent;
 		border = new BorderPane();
 		area = new TextArea(inputText);
+		output = new TextArea("Compiler Output:\n");
+		output.setEditable(false);
 		Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
 		area.setPrefHeight(bounds.getHeight()-175);
 		area.setPrefWidth(bounds.getWidth());
+		output.setMinWidth(bounds.getWidth()/4);
 		pane = new ScrollPane(area);
 		pane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
 		box = new HBox();
@@ -36,9 +40,10 @@ public class YSTab extends Tab {
 		compile.setOnAction(handler);
 		compile.setPrefHeight(100);
 		compile.setPrefWidth(100);
-		box.getChildren().add(compile);
+		box.getChildren().addAll(compile, output);
 		border.setBottom(box);
 		border.setCenter(pane);
+		border.setRight(output);
 		this.setContent(border);
 		this.setText(fileName);
 	}

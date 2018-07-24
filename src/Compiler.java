@@ -26,10 +26,13 @@ public class Compiler {
 				output += assemblerDirectiveProcessing(l,firstWord);
 			else if(firstWord.contains(":")) 
 			{
-				
+
 			}
 			else if(!l.line.equals("")){ 
 				String opCode = InstructionBuilder.INSTRUCTION_TO_OPCODE.get(firstWord.toUpperCase());
+				if(opCode == null)
+					throw new IllegalArgumentException("Invalid instruction - " + firstWord.toUpperCase() +" is not a valid instruction.\n"
+							+ "Error occured on the line: "+ l.line);
 				if(Instruction.contains(Instruction.RTYPE, opCode))
 					output += rType(l,firstWord.toUpperCase());
 				else if(opCode.equals(Instruction.OP_32_IMM) || opCode.equals(Instruction.OP_IMM))
@@ -56,8 +59,17 @@ public class Compiler {
 	}
 
 	private static String branchType(Line l, String instruction) {
+		try {
 		String rs1 = l.splitLine[1].substring(1);
+		if(!l.splitLine[1].contains("x"))
+			throw new IllegalArgumentException("Invalid instruction argument - The RS1 input must be a register.\n"
+					+ "Error occured on the line: "+ l.line);
+
 		String rs2 = l.splitLine[2].substring(1);
+		if(!l.splitLine[2].contains("x"))
+			throw new IllegalArgumentException("Invalid instruction argument - The RS2 input must be a register.\n"
+					+ "Error occured on the line: "+ l.line);
+
 		String val;
 		if(TAG_TO_ADDRESS.containsKey(l.splitLine[3])) {
 			System.out.println(TAG_TO_ADDRESS.get(l.splitLine[3]));
@@ -68,8 +80,14 @@ public class Compiler {
 		} else {
 			val = l.splitLine[3];
 		}
-
-		String imm = Long.parseLong(val)%((long)(Math.pow(2, 12))) +"";
+		String imm;
+		try {
+		 imm = Long.parseLong(val)%((long)(Math.pow(2, 12))) +"";
+		}
+		catch(NumberFormatException e) {
+			throw new IllegalArgumentException("Invalid instruction argument - " + val + " is not a valid input.\n"
+					+ "Error occured on the line: "+ l.line);
+		}
 		boolean[] rs1Array = ALU.longToBitArrayUnsigned(Long.parseLong(rs1), 5);
 		boolean[] rs2Array = ALU.longToBitArrayUnsigned(Long.parseLong(rs2), 5);
 		boolean[] immArray = ALU.longToBitArray(Long.parseLong(imm), 13);
@@ -81,70 +99,111 @@ public class Compiler {
 		Word w = new Word(instructionArray);
 		COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
 		return w.generateHex();
+		}
+		catch(IndexOutOfBoundsException e) {
+			throw new IllegalArgumentException("Invalid instruction argument - The instruction "+ instruction +" requires two register inputs and one immediate input.\n "
+					+ "Error occured on the line: "+ l.line);
+		}
 	}
 
 	private static String memType(Line l, String instruction) {
-		String rDRs2 = l.splitLine[1].substring(1);
-		String rs1 = l.splitLine[2].substring(1);
-		String val = l.splitLine[3];
-		if(TAG_TO_ADDRESS.containsKey(val)) {
-			val = (Long.parseLong(TAG_TO_ADDRESS.get(val),16) - Long.parseLong(l.address,16)) + "";
-		} else if(val.contains("0x")) {
-			val = ""+Long.parseLong(val.substring(2),16);
-		} else if(val.length() == 0) {
-			val = "0";
+		try {
+			String rDRs2 = l.splitLine[1].substring(1);
+			if(!l.splitLine[1].contains("x"))
+				throw new IllegalArgumentException("Invalid instruction argument - Either RD or RS2 input must be a register.\n"
+						+ "Error occured on the line: "+ l.line);
+
+			String rs1 = l.splitLine[2].substring(1);
+			if(!l.splitLine[2].contains("x"))
+				throw new IllegalArgumentException("Invalid instruction argument - The RS1 input must be a register.\n"
+						+ "Error occured on the line: "+ l.line);
+
+			String val = l.splitLine[3];
+			if(TAG_TO_ADDRESS.containsKey(val)) {
+				val = (Long.parseLong(TAG_TO_ADDRESS.get(val),16) - Long.parseLong(l.address,16)) + "";
+			} else if(val.contains("0x")) {
+				val = ""+Long.parseLong(val.substring(2),16);
+			} else if(val.length() == 0) {
+				val = "0";
+			}
+			boolean[] rDRS2Array = ALU.longToBitArrayUnsigned(Long.parseLong(rDRs2), 5);
+			boolean[] rs1Array = ALU.longToBitArrayUnsigned(Long.parseLong(rs1), 5);
+			String imm;
+			try {
+				imm = Long.parseLong(val)%((long)(Math.pow(2, 11)))  +"";
+			}
+			catch(NumberFormatException e) {
+				throw new IllegalArgumentException("Invalid instruction argument - " + val + " is not a valid input.\n"
+						+ "Error occured on the line: "+ l.line);
+			}
+			boolean[] immArray = ALU.longToBitArray(Long.parseLong(imm), 12);
+			System.out.println(instruction+" "+ALU.calculateValueSigned(immArray));
+			boolean[] instructionArray;
+			switch(InstructionBuilder.INSTRUCTION_TO_OPCODE.get(instruction)) {
+			case Instruction.LOAD:
+			case Instruction.JALR:
+				instructionArray = InstructionBuilder.generateInstruction(instruction, rDRS2Array, rs1Array, null, immArray);
+				break;
+			default:
+				instructionArray = InstructionBuilder.generateInstruction(instruction, null, rs1Array, rDRS2Array, immArray);
+				break;
+			}
+			Word w = new Word(instructionArray);
+			COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
+			return w.generateHex();
 		}
-		boolean[] rDRS2Array = ALU.longToBitArrayUnsigned(Long.parseLong(rDRs2), 5);
-		boolean[] rs1Array = ALU.longToBitArrayUnsigned(Long.parseLong(rs1), 5);
-		String imm = Long.parseLong(val)%((long)(Math.pow(2, 11)))  +"";
-		boolean[] immArray = ALU.longToBitArray(Long.parseLong(imm), 12);
-		System.out.println(instruction+" "+ALU.calculateValueSigned(immArray));
-		boolean[] instructionArray;
-		switch(InstructionBuilder.INSTRUCTION_TO_OPCODE.get(instruction)) {
-		case Instruction.LOAD:
-		case Instruction.JALR:
-			 instructionArray = InstructionBuilder.generateInstruction(instruction, rDRS2Array, rs1Array, null, immArray);
-			break;
-		default:
-			instructionArray = InstructionBuilder.generateInstruction(instruction, null, rs1Array, rDRS2Array, immArray);
-			break;
+		catch(IndexOutOfBoundsException e) {
+			throw new IllegalArgumentException("Invalid instruction argument - The instruction "+ instruction +" requires two register inputs and one immediate input.\n "
+					+ "Error occured on the line: "+ l.line);
 		}
-		Word w = new Word(instructionArray);
-		COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
-		return w.generateHex();
 	}
 
 	static String uAndUJType(Line l, String instruction) {
-		String rD = l.splitLine[1].substring(1);
-		String val;
-		if(TAG_TO_ADDRESS.containsKey(l.splitLine[2])) {
-			val = (Long.parseLong(TAG_TO_ADDRESS.get(l.splitLine[2])) - Long.parseLong(l.address,16)) + "";
-		} else if(l.splitLine[2].contains("0x")) {
-			val = ""+Long.parseLong(l.splitLine[2].substring(2),16);
-		} else {
-			val = l.splitLine[2];
-		}
+		try {
+			String rD = l.splitLine[1].substring(1);
+			if(!l.splitLine[1].contains("x"))
+				throw new IllegalArgumentException("Invalid instruction argument - The RD input must be a register.\n"
+						+ "Error occured on the line: "+ l.line);
+			String val;
+			if(TAG_TO_ADDRESS.containsKey(l.splitLine[2])) {
+				val = (Long.parseLong(TAG_TO_ADDRESS.get(l.splitLine[2])) - Long.parseLong(l.address,16)) + "";
+			} else if(l.splitLine[2].contains("0x")) {
+				val = ""+Long.parseLong(l.splitLine[2].substring(2),16);
+			} else {
+				val = l.splitLine[2];
+			}
 
-		boolean[] rDArray = ALU.longToBitArrayUnsigned(Long.parseLong(rD), 5);
-		boolean[] immArray;
-		String imm ;
-		switch(InstructionBuilder.INSTRUCTION_TO_OPCODE.get(instruction)) {
+			boolean[] rDArray = ALU.longToBitArrayUnsigned(Long.parseLong(rD), 5);
+			boolean[] immArray;
+			String imm ;
+			try {
+				switch(InstructionBuilder.INSTRUCTION_TO_OPCODE.get(instruction)) {
 
-		case Instruction.AUIPC:
-		case Instruction.LUI:
-			imm = Long.parseLong(val)%((long)(Math.pow(2, 19)))  +"";
-			immArray = ALU.longToBitArray(Long.parseLong(imm), 20);
-			break;
-		default:
-			imm = Long.parseLong(val)%((long)(Math.pow(2, 20)))  +"";
-			immArray = ALU.longToBitArray(Long.parseLong(imm), 21);
-			immArray[0] = false;
-			break;
+				case Instruction.AUIPC:
+				case Instruction.LUI:
+					imm = Long.parseLong(val)%((long)(Math.pow(2, 19)))  +"";
+					immArray = ALU.longToBitArray(Long.parseLong(imm), 20);
+					break;
+				default:
+					imm = Long.parseLong(val)%((long)(Math.pow(2, 20)))  +"";
+					immArray = ALU.longToBitArray(Long.parseLong(imm), 21);
+					immArray[0] = false;
+					break;
+				}
+			}
+			catch(NumberFormatException e) {
+				throw new IllegalArgumentException("Invalid instruction argument - " + val + " is not a valid input.\n"
+						+ "Error occured on the line: "+ l.line);
+			}
+			boolean[] instructionArray = InstructionBuilder.generateInstruction(instruction, rDArray, null, null, immArray);
+			Word w = new Word(instructionArray);
+			COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
+			return w.generateHex();
 		}
-		boolean[] instructionArray = InstructionBuilder.generateInstruction(instruction, rDArray, null, null, immArray);
-		Word w = new Word(instructionArray);
-		COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
-		return w.generateHex();
+		catch(IndexOutOfBoundsException e) {
+			throw new IllegalArgumentException("Invalid instruction argument - The instruction "+ instruction +" requires one register inputs and one immediate input.\n "
+					+ "Error occured on the line: "+ l.line);
+		}
 	}
 
 
@@ -153,28 +212,47 @@ public class Compiler {
 
 
 	private static String iTypeType1(Line l, String instruction) {
-		String rD = l.splitLine[1].substring(1);
-		String rs1 = l.splitLine[2].substring(1);
-		String val;
-		if(TAG_TO_ADDRESS.containsKey(l.splitLine[3])) {
-			val = (Long.parseLong(TAG_TO_ADDRESS.get(l.splitLine[3])) - Long.parseLong(l.address,16)) + "";
-		} else if(l.splitLine[3].contains("0x")) {
-			val = ""+Long.parseLong(l.splitLine[3].substring(2),16);
-		} else {
-			val = l.splitLine[3];
-		}
+		try {
+			String rD = l.splitLine[1].substring(1);
+			if(!l.splitLine[1].contains("x"))
+				throw new IllegalArgumentException("Invalid instruction argument - The RD input must be a register.\n"
+						+ "Error occured on the line: "+ l.line);
+			String rs1 = l.splitLine[2].substring(1);
+			if(!l.splitLine[2].contains("x"))
+				throw new IllegalArgumentException("Invalid instruction argument - The RS1 input must be a register.\n"
+						+ "Error occured on the line: "+ l.line);
 
-		String imm = Long.parseLong(val)%((long)(Math.pow(2, 11))) +"";
-		boolean[] rDArray = ALU.longToBitArrayUnsigned(Long.parseLong(rD), 5);
-		boolean[] rs1Array = ALU.longToBitArrayUnsigned(Long.parseLong(rs1), 5);
-		boolean[] immArray = ALU.longToBitArray(Long.parseLong(imm), 12);
-		if(instruction.toUpperCase().startsWith("SRAI"))
-			immArray[10] = true;
-		boolean[] instructionArray = InstructionBuilder.generateInstruction(instruction, rDArray, rs1Array, null, immArray);
-		System.out.println(instructionArray);
-		Word w = new Word(instructionArray);
-		COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
-		return w.generateHex();
+			String val;
+			if(TAG_TO_ADDRESS.containsKey(l.splitLine[3])) {
+				val = (Long.parseLong(TAG_TO_ADDRESS.get(l.splitLine[3])) - Long.parseLong(l.address,16)) + "";
+			} else if(l.splitLine[3].contains("0x")) {
+				val = ""+Long.parseLong(l.splitLine[3].substring(2),16);
+			} else {
+				val = l.splitLine[3];
+			}
+			String imm;
+			try {
+				imm = Long.parseLong(val)%((long)(Math.pow(2, 11))) +"";
+			}
+			catch(NumberFormatException e) {
+				throw new IllegalArgumentException("Invalid instruction argument - " + val + " is not a valid input.\n"
+						+ "Error occured on the line: "+ l.line);
+			}
+			boolean[] rDArray = ALU.longToBitArrayUnsigned(Long.parseLong(rD), 5);
+			boolean[] rs1Array = ALU.longToBitArrayUnsigned(Long.parseLong(rs1), 5);
+			boolean[] immArray = ALU.longToBitArray(Long.parseLong(imm), 12);
+			if(instruction.toUpperCase().startsWith("SRAI"))
+				immArray[10] = true;
+			boolean[] instructionArray = InstructionBuilder.generateInstruction(instruction, rDArray, rs1Array, null, immArray);
+			System.out.println(instructionArray);
+			Word w = new Word(instructionArray);
+			COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
+			return w.generateHex();
+		}
+		catch(IndexOutOfBoundsException e) {
+			throw new IllegalArgumentException("Invalid instruction argument - The instruction "+ instruction +" requires two register inputs and one immediate input.\n "
+					+ "Error occured on the line: "+ l.line);
+		}
 	}
 
 
@@ -183,16 +261,31 @@ public class Compiler {
 
 
 	private static String rType(Line l, String instruction) {
-		String rD = l.splitLine[1].substring(1);
-		String rs1 = l.splitLine[2].substring(1);
-		String rs2 = l.splitLine[3].substring(1);
-		boolean[] rDArray = ALU.longToBitArrayUnsigned(Long.parseLong(rD), 5);
-		boolean[] rs1Array = ALU.longToBitArrayUnsigned(Long.parseLong(rs1), 5);
-		boolean[] rs2Array = ALU.longToBitArrayUnsigned(Long.parseLong(rs2), 5);
-		boolean[] instructionArray = InstructionBuilder.generateInstruction(instruction, rDArray, rs1Array, rs2Array, null);
-		Word w = new Word(instructionArray);
-		COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
-		return w.generateHex();
+		try {
+			String rD = l.splitLine[1].substring(1);
+			if(!l.splitLine[1].contains("x"))
+				throw new IllegalArgumentException("Invalid instruction argument - The RD input must be a register.\n"
+						+ "Error occured on the line: "+ l.line);
+			String rs1 = l.splitLine[2].substring(1);
+			if(!l.splitLine[2].contains("x"))
+				throw new IllegalArgumentException("Invalid instruction argument - The RS1 input must be a register.\n"
+						+ "Error occured on the line: "+ l.line);
+			String rs2 = l.splitLine[3].substring(1);
+			if(!l.splitLine[3].contains("x"))
+				throw new IllegalArgumentException("Invalid instruction argument - The RS2 input must be a register.\n"
+						+ "Error occured on the line: "+ l.line);
+			boolean[] rDArray = ALU.longToBitArrayUnsigned(Long.parseLong(rD), 5);
+			boolean[] rs1Array = ALU.longToBitArrayUnsigned(Long.parseLong(rs1), 5);
+			boolean[] rs2Array = ALU.longToBitArrayUnsigned(Long.parseLong(rs2), 5);
+			boolean[] instructionArray = InstructionBuilder.generateInstruction(instruction, rDArray, rs1Array, rs2Array, null);
+			Word w = new Word(instructionArray);
+			COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
+			return w.generateHex();
+		}
+		catch(IndexOutOfBoundsException e) {
+			throw new IllegalArgumentException("Invalid instruction argument - The instruction "+ instruction +" requires three register inputs.\n"
+					+ "Error occured on the line: "+ l.line);
+		}
 	}
 
 
@@ -254,15 +347,17 @@ public class Compiler {
 		Scanner scan = new Scanner(input);
 		while(scan.hasNextLine()) {
 			String line = scan.nextLine();
-			line = lineCorrection(line);
-			String[] lineSplit = split(line);
-			String firstWord = lineSplit[0];
-			if(firstWord.startsWith("."))
-				address = assemblerDirective(firstWord, lineSplit, address, line);
-			else if(firstWord.contains(":"))
-				address = tag(firstWord, lineSplit, address, line);
-			else 
-				address = instruction(firstWord, lineSplit, address, line);
+			if(line.length() > 0) {
+				line = lineCorrection(line);
+				String[] lineSplit = split(line);
+				String firstWord = lineSplit[0];
+				if(firstWord.startsWith("."))
+					address = assemblerDirective(firstWord, lineSplit, address, line);
+				else if(firstWord.contains(":"))
+					address = tag(firstWord, lineSplit, address, line);
+				else 
+					address = instruction(firstWord, lineSplit, address, line);
+			}
 		}
 		scan.close();
 	}
@@ -293,6 +388,9 @@ public class Compiler {
 
 
 	private static long assemblerDirective(String directive, String[] lineSplit, long address, String line) {
+		if(!Instruction.contains(VALID_ASSEMBLER_DIRECTIVES, directive))
+			throw new IllegalArgumentException("Invalid assembler directive - " + directive +  " is not a valid directive.\n "
+					+ "Error occured on the line: "+ line);
 		if(directive.equals(ALIGN)) {
 			address = address + address%Integer.parseInt(lineSplit[1]);
 			inputLines.add(new Line(Long.toHexString(address),lineSplit,line));
@@ -382,4 +480,5 @@ public class Compiler {
 	public static final String EIGHTBYTE = ".8byte";
 	public static final String DWORD = ".dword";
 	public static final String QUAD = ".quad";
+	public static final String[] VALID_ASSEMBLER_DIRECTIVES = {ALIGN, BYTE, TWOBYTE, HALF, SHORT, FOURBYTE, WORD, LONG, EIGHTBYTE, DWORD, QUAD}; 
 }
