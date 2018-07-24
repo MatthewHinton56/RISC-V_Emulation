@@ -3,6 +3,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Scanner;
 
+import javafx.scene.control.TextArea;
+
 public class Compiler {
 
 	public static final HashMap<Long, String[]> COMPILED_INSTRUCTIONS =  new HashMap<Long, String[]>(); 
@@ -10,20 +12,19 @@ public class Compiler {
 	public static String start_address;
 	public static boolean compiled;
 
-	public static String compile(String input) {
+	public static String compile(String input, TextArea outputWindow) {
 		preprocessor(input);
-		compiled = true;
 		COMPILED_INSTRUCTIONS.clear();
 		COMPILED_CONSTANTS.clear();
 		start_address = inputLines.get(0).address;
-		start_address = inputLines.get(0).address;
 		String output = "";
 		for(Line l: inputLines) {
+			String outputLine = "";
 			System.out.println(l);
-			output += "0x" + l.address +": ";
+			outputLine += "0x" + l.address +": ";
 			String firstWord = l.splitLine[0];
 			if(firstWord.startsWith("."))
-				output += assemblerDirectiveProcessing(l,firstWord);
+				outputLine += assemblerDirectiveProcessing(l,firstWord);
 			else if(firstWord.contains(":")) 
 			{
 
@@ -34,20 +35,23 @@ public class Compiler {
 					throw new IllegalArgumentException("Invalid instruction - " + firstWord.toUpperCase() +" is not a valid instruction.\n"
 							+ "Error occured on the line: "+ l.line);
 				if(Instruction.contains(Instruction.RTYPE, opCode))
-					output += rType(l,firstWord.toUpperCase());
+					outputLine += rType(l,firstWord.toUpperCase());
 				else if(opCode.equals(Instruction.OP_32_IMM) || opCode.equals(Instruction.OP_IMM))
-					output += iTypeType1(l,firstWord.toUpperCase());
+					outputLine += iTypeType1(l,firstWord.toUpperCase());
 				else if(Instruction.contains(Instruction.UTYPE, opCode) || Instruction.contains(Instruction.UJTYPE, opCode))	
-					output += uAndUJType(l,firstWord.toUpperCase());
+					outputLine += uAndUJType(l,firstWord.toUpperCase());
 				else if(opCode.equals(Instruction.JALR) || opCode.equals(Instruction.LOAD) || opCode.equals(Instruction.STORE))
-					output += memType(l, firstWord.toUpperCase());
+					outputLine += memType(l, firstWord.toUpperCase());
 				else if(opCode.equals(Instruction.BRANCH))
-					output += branchType(l, firstWord.toUpperCase());
+					outputLine += branchType(l, firstWord.toUpperCase());
 				else if(opCode.equals(Instruction.STOP))
-					output += haltType(l, firstWord.toUpperCase());
+					outputLine += haltType(l, firstWord.toUpperCase());
 			}
-			output+= " "+l.line+"\n";
+			outputLine+= " "+l.line+"\n";
+			outputWindow.setText(outputWindow.getText() + l.originalLine + " ==> " + outputLine+"\n");
+			output+=outputLine;
 		}
+		compiled = true;
 		return output;
 	}
 
@@ -346,17 +350,17 @@ public class Compiler {
 		inputLines.clear();
 		Scanner scan = new Scanner(input);
 		while(scan.hasNextLine()) {
-			String line = scan.nextLine();
-			if(line.length() > 0) {
-				line = lineCorrection(line);
+			String originalLine = scan.nextLine();
+			if(originalLine.length() > 0) {
+				String line = lineCorrection(originalLine);
 				String[] lineSplit = split(line);
 				String firstWord = lineSplit[0];
 				if(firstWord.startsWith("."))
-					address = assemblerDirective(firstWord, lineSplit, address, line);
+					address = assemblerDirective(firstWord, lineSplit, address, line, originalLine);
 				else if(firstWord.contains(":"))
-					address = tag(firstWord, lineSplit, address, line);
+					address = tag(firstWord, lineSplit, address, line, originalLine);
 				else 
-					address = instruction(firstWord, lineSplit, address, line);
+					address = instruction(firstWord, lineSplit, address, line, originalLine);
 			}
 		}
 		scan.close();
@@ -374,26 +378,26 @@ public class Compiler {
 		return line;
 	}
 
-	private static long tag(String tag, String[] lineSplit, long address, String line) {
+	private static long tag(String tag, String[] lineSplit, long address, String line, String originalLine) {
 		TAG_TO_ADDRESS.put(lineSplit[0].substring(0, lineSplit[0].length()-1), Long.toHexString(address));
-		inputLines.add(new Line(Long.toHexString(address),lineSplit,line));
+		inputLines.add(new Line(Long.toHexString(address),lineSplit,line, originalLine));
 		return address;
 	}
 
 
-	private static long instruction(String instruction, String[] lineSplit, long address, String line) {
-		inputLines.add(new Line(Long.toHexString(address),lineSplit,line));
+	private static long instruction(String instruction, String[] lineSplit, long address, String line, String originalLine) {
+		inputLines.add(new Line(Long.toHexString(address),lineSplit,line, originalLine));
 		return address + 4;
 	}
 
 
-	private static long assemblerDirective(String directive, String[] lineSplit, long address, String line) {
+	private static long assemblerDirective(String directive, String[] lineSplit, long address, String line, String originalLine) {
 		if(!Instruction.contains(VALID_ASSEMBLER_DIRECTIVES, directive))
 			throw new IllegalArgumentException("Invalid assembler directive - " + directive +  " is not a valid directive.\n "
 					+ "Error occured on the line: "+ line);
 		if(directive.equals(ALIGN)) {
 			address = address + address%Integer.parseInt(lineSplit[1]);
-			inputLines.add(new Line(Long.toHexString(address),lineSplit,line));
+			inputLines.add(new Line(Long.toHexString(address),lineSplit,line, originalLine));
 			return address;
 		}
 		long increment = 0;
@@ -420,7 +424,7 @@ public class Compiler {
 			newLineArray[0] = directive;
 			newLineArray[1] = lineSplit[i];
 			String newLine = directive + " " + lineSplit[i];
-			inputLines.add(new Line(Long.toHexString(address),newLineArray,newLine));
+			inputLines.add(new Line(Long.toHexString(address),newLineArray,newLine, originalLine));
 			address+=increment;
 		}
 		return address;
@@ -448,10 +452,12 @@ public class Compiler {
 		String address;
 		String[] splitLine;
 		String line;
-		public Line(String address, String[] splitLine, String line) {
+		String originalLine;
+		public Line(String address, String[] splitLine, String line, String originalLine) {
 			this.address = address;
 			this.splitLine = splitLine;
 			this.line = line;
+			this.originalLine = originalLine;
 		}
 
 		public String toString() {

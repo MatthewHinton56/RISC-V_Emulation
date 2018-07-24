@@ -10,7 +10,6 @@ import javafx.event.EventHandler;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.RadioButton;
 import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.ToggleGroup;
@@ -21,11 +20,12 @@ public class EmulatorMenuBar extends MenuBar implements EventHandler<ActionEvent
 	public static final String HEX = "Hex";
 	public static final String UNSIGNED = "Unsigned";
 	public static final String SIGNED = "Signed";
+	public static final String HEXLE = "Hex LE";
 
 	public MainStage mainStage;
 	public Menu file, options, baseInteger, multiplyExtension, instructions;
 	public MenuItem newButton, saveButton, loadButton;
-	public RadioMenuItem hex, unsigned, signed;
+	public RadioMenuItem hex, unsigned, signed, hexLe;
 	public ToggleGroup group;
 	public static String displaySetting = HEX;
 
@@ -99,13 +99,19 @@ public class EmulatorMenuBar extends MenuBar implements EventHandler<ActionEvent
 		hex = new RadioMenuItem(HEX);
 		unsigned = new RadioMenuItem(UNSIGNED);
 		signed = new RadioMenuItem(SIGNED);
+		hexLe = new RadioMenuItem(HEXLE);
+		
 		group = new ToggleGroup();
 		hex.setToggleGroup(group);
 		unsigned.setToggleGroup(group);
 		signed.setToggleGroup(group);
+		hexLe.setToggleGroup(group);
+		
 		hex.setOnAction(this);
 		signed.setOnAction(this);
 		unsigned.setOnAction(this);
+		hexLe.setOnAction(this);
+		
 		hex.setSelected(true);
 
 		baseInteger = new Menu("Base Integer");
@@ -124,7 +130,7 @@ public class EmulatorMenuBar extends MenuBar implements EventHandler<ActionEvent
 		instructions = new Menu("Instructions");
 		instructions.getItems().addAll(baseInteger, multiplyExtension);
 		file.getItems().addAll(newButton, saveButton, loadButton);
-		options.getItems().addAll(hex, signed, unsigned);
+		options.getItems().addAll(hex, signed, unsigned, hexLe);
 		this.getMenus().addAll(file, options, instructions);
 	}
 

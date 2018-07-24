@@ -36,8 +36,8 @@ public class MainStage extends Application implements EventHandler<ActionEvent>{
 		ystab.output.clear();
 		String output;
 		try {
-		output = Compiler.compile(input);
-		ystab.output.setText("Compiler Output:\n Assembly compiled and ready for emulation in yotab" );
+		output = Compiler.compile(input, ystab.output);
+		ystab.output.setText(ystab.output.getText() + "Compiler Output:\n Assembly compiled and ready for emulation in yotab" );
 		Processor.clear();
 		System.out.println(input);
 		pane.getTabs().remove(yotab);
@@ -46,7 +46,7 @@ public class MainStage extends Application implements EventHandler<ActionEvent>{
 		pane.getTabs().add(yotab);
 		}
 		catch(IllegalArgumentException e) {
-			ystab.output.setText("Compiler Output:\n" + e.getMessage());
+			ystab.output.setText(ystab.output.getText() + "Compiler Output:\n" + e.getMessage());
 		}
 	}
 
