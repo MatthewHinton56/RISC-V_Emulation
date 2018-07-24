@@ -33,11 +33,11 @@ public class MainStage extends Application implements EventHandler<ActionEvent>{
 	@Override
 	public void handle(ActionEvent arg0) {
 		String input = ystab.area.getText();
-		ystab.output.clear();
+		ystab.output.setText("Compiler Output:\n");
 		String output;
 		try {
 		output = Compiler.compile(input, ystab.output);
-		ystab.output.setText(ystab.output.getText() + "Compiler Output:\n Assembly compiled and ready for emulation in yotab" );
+		ystab.output.setText(ystab.output.getText() + "\n Assembly compiled and ready for emulation in yotab" );
 		Processor.clear();
 		System.out.println(input);
 		pane.getTabs().remove(yotab);

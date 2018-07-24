@@ -303,6 +303,8 @@ public class YOTab extends Tab {
 			return (val.calculateValueSigned()+" ");
 		case EmulatorMenuBar.UNSIGNED:
 			return val.calculateValueUnSigned();
+		case EmulatorMenuBar.HEXLE:
+			return val.generateHexLE();
 		default:
 			return "0x"+val.displayToString();
 		}

@@ -32,9 +32,14 @@ public class Memory {
 		return new DoubleWord(immediate, true);
 	}
 
-	public static void storeDoubleWord(long position, DoubleWord val) {
+	public static boolean storeDoubleWord(long position, DoubleWord val) {
+		if(position % 8 != 0) {
+			Processor.status = "HLT";
+			return false;
+		}
 		for(long i = position; i < position + 8; i++)
 			memory.put(i, new BYTE(val.getBYTE((int) (i-position)).generateHex()));
+		return true;
 	}
 
 	public static Word loadWord(long position) {
@@ -83,14 +88,24 @@ public class Memory {
 		return new BYTE(immediate);
 	}
 
-	public static void storeWord(long position, Word val) {
+	public static boolean storeWord(long position, Word val) {
+		if(position % 4 != 0) {
+			Processor.status = "HLT";
+			return false;
+		}
 		for(long i = position; i < position + 4; i++)
 			memory.put(i, new BYTE(val.getBYTE((int) (i-position)).generateHex()));
+		return true;
 	}
 
-	public static void storeHalfWord(long position, HalfWord val) {
+	public static boolean storeHalfWord(long position, HalfWord val) {
+		if(position % 2 != 0) {
+			Processor.status = "HLT";
+			return false;
+		}
 		for(long i = position; i < position + 2; i++)
 			memory.put(i, new BYTE(val.getBYTE((int) (i-position)).generateHex()));
+		return true;
 	}
 
 	public static void storeBYTE(long position, BYTE val) {

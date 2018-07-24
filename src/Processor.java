@@ -557,6 +557,7 @@ public class Processor {
 			Processor.registerFile.set("pc",new DoubleWord(Long.parseLong(Compiler.start_address,16)));
 			clearArrays();
 			pcAddresses[0] = new DoubleWord(Long.parseLong(Compiler.start_address,16));
+			status = "AOK";
 			System.out.println(registerFile.get("pc").calculateValueSigned());
 			for(long l: Compiler.COMPILED_CONSTANTS.keySet()) {
 				LittleEndian le = Compiler.COMPILED_CONSTANTS.get(l);
@@ -571,7 +572,6 @@ public class Processor {
 				System.out.println(Memory.loadWord(l) + " "+ l);
 			}
 			stopCount = -1;
-			status = "AOK";
 			registerFile.reset();
 			JALRStall = false;
 			stopFetching = false;

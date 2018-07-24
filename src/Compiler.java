@@ -310,28 +310,30 @@ public class Compiler {
 
 
 		switch(directive) {
+		case ALIGN:
+			break;
 		case BYTE:
 			BYTE b = new BYTE(val);
-			output += b.generateHexLE();
+			output += b.generateHex();
 			COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), b);
 			break;
 		case TWOBYTE:
 		case SHORT:
 		case HALF:
 			HalfWord hw = new HalfWord(val,false);
-			output += hw.generateHexLE();
+			output += hw.generateHex();
 			COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), hw);
 			break;
 		case FOURBYTE:
 		case LONG:
 		case WORD:
 			Word w = new Word(val,false);
-			output += w.generateHexLE();
+			output += w.generateHex();
 			COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
 			break;
 		default:
 			DoubleWord dw = new DoubleWord(val,false);
-			output += dw.generateHexLE();
+			output += dw.generateHex();
 			COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), dw);
 			break;		
 		}
