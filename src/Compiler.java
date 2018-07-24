@@ -1,5 +1,3 @@
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -266,6 +264,7 @@ public class Compiler {
 			else 
 				address = instruction(firstWord, lineSplit, address, line);
 		}
+		scan.close();
 	}
 
 	private static String lineCorrection(String line) {

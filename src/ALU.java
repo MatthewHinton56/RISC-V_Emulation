@@ -5,7 +5,7 @@ import java.util.Scanner;
 
 public class ALU {
 	//only ALU can set these
-	private static boolean CF, ZF, SF, OF;
+	private static boolean CF, SF, OF;
 
 	//a.length ==  b.length
 	public static boolean[] AND(boolean[] a, boolean[] b) {
@@ -55,7 +55,6 @@ public class ALU {
 			carry = carryTemp;
 		}
 		CF = carry;
-		ZF = ALU.Equal(c, new boolean[a.length]);
 		SF = isNeg(c);
 		return c;
 	}
@@ -213,7 +212,6 @@ public class ALU {
 	//arraySize <= 63
 	// -2^(arraySize-1) <= l <= 2^(arraySize-1) -1
 	public static boolean[] longToBitArrayUnsigned(long l, int arraySize) {
-		long T_MAX =  (long) (-1 + Math.pow(2, arraySize));
 		boolean[] c = new boolean[arraySize];
 		for(int pos = arraySize-1; pos >= 0; pos--) {
 			long val = ((long)Math.pow(2, pos));
@@ -327,7 +325,6 @@ public class ALU {
 
 	public static void main(String[] args) {
 		Scanner scan = new Scanner(System.in);
-		while(true) {
 			System.out.print("valA: ");
 			int valA = scan.nextInt();
 			System.out.print("valB: ");
@@ -355,7 +352,8 @@ public class ALU {
 			System.out.println("ZF:" + ZF);*/
 			System.out.println(c);
 			System.out.println(SF ^ OF);
-		}
+		
+		scan.close();
 	}
 
 	public static long calculateValueSigned(boolean[] bitArray) {

@@ -418,8 +418,6 @@ public class Processor {
 
 	private static void executeMExtension(Instruction currentInstruction) {
 		DoubleWord valE = null;
-		boolean[] constant = null;
-		DoubleWord c = null;
 		Word w = null;
 		switch(currentInstruction.instruction) {
 		case "MUL":

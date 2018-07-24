@@ -3,7 +3,6 @@ import java.util.Scanner;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Rectangle2D;
-import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ScrollPane;
@@ -250,9 +249,12 @@ public class YOTab extends Tab {
 			String restOfLine = line.substring(line.indexOf(":")+1);
 			DoubleWord addressLine = new DoubleWord(Long.parseLong(addressString, 16));
 			System.out.println(addressLine.displayToString());
-			if(addressLine.equals(address) && !restOfLine.contains(":") && !restOfLine.contains("."))
+			if(addressLine.equals(address) && !restOfLine.contains(":") && !restOfLine.contains(".")) {
+				scan.close();
 				return true;
+			}
 		}
+		scan.close();
 		return false;
 	}
 
