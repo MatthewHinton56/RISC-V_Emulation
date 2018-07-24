@@ -24,7 +24,7 @@ public class Instruction {
 	boolean memory;
 	boolean memLoaded, branch, exeFinished, bubble;
 	public boolean stop;
-	private DoubleWord address;
+	public DoubleWord address;
 	public Instruction(boolean[] instructionBitEncoding, DoubleWord address) {
 		this.address = address;
 		String opCode = bitToString(0,6, instructionBitEncoding);

@@ -1,6 +1,5 @@
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.TreeMap;
 
 public class Memory {
 	public static final HashMap<Long,BYTE> memory = new HashMap<Long,BYTE>();
@@ -137,7 +136,7 @@ public class Memory {
 		return image;
 	}
 	
-	public static ArrayList<Long> getDif(TreeMap<Long, DoubleWord> memoryBefore, TreeMap<Long, DoubleWord> memoryAfter) {
+	public static ArrayList<Long> getDif(HashMap<Long, BYTE> memoryBefore, HashMap<Long, BYTE> memoryAfter) {
 		ArrayList<Long> dif = new ArrayList<Long>();
 		for(Long reg: memoryAfter.keySet()) {
 			if(!memoryBefore.containsKey(reg) || !memoryAfter.get(reg).equals(memoryBefore.get(reg)))

@@ -38,6 +38,7 @@ public class MainStage extends Application implements EventHandler<ActionEvent>{
 		try {
 		output = Compiler.compile(input, ystab.output);
 		ystab.output.setText(ystab.output.getText() + "\n Assembly compiled and ready for emulation in yotab" );
+		
 		Processor.clear();
 		System.out.println(input);
 		pane.getTabs().remove(yotab);

@@ -16,7 +16,7 @@ public class YSTab extends Tab {
 	Button compile;
 	TextArea area;
 	TextArea output;
-	ScrollPane pane;
+	ScrollPane pane, outputDisplayPane;
 	BorderPane border;
 	TabPane parent;
 	HBox box;
@@ -34,6 +34,8 @@ public class YSTab extends Tab {
 		output.setMinWidth(bounds.getWidth()/4);
 		pane = new ScrollPane(area);
 		pane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+		outputDisplayPane = new ScrollPane(output);
+		outputDisplayPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
 		box = new HBox();
 		box.setPrefHeight(100);
 		compile = new Button("Compile");
@@ -43,7 +45,7 @@ public class YSTab extends Tab {
 		box.getChildren().addAll(compile, output);
 		border.setBottom(box);
 		border.setCenter(pane);
-		border.setRight(output);
+		border.setRight(outputDisplayPane);
 		this.setContent(border);
 		this.setText(fileName);
 	}

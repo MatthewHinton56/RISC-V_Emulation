@@ -1,4 +1,7 @@
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Scanner;
+import java.util.TreeMap;
 
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -20,9 +23,9 @@ public class YOTab extends Tab {
 
 	String fileName;
 	Button step,run,initialize, clockPulse;
-	TextArea area;
-	ScrollPane pane, displayPane,memDisplayScrollPane;
-	BorderPane border;
+	TextArea area, outputDisplay;
+	ScrollPane pane, displayPane,memDisplayScrollPane, outputDisplayPane;
+	BorderPane border, textBorder;
 	GridPane registerDisplay;
 	GridPane memDisplay;
 	ToggleGroup group;
@@ -33,13 +36,25 @@ public class YOTab extends Tab {
 	public YOTab(TabPane parent, String fileName, String inputText) {
 		this.parent = parent;
 		border = new BorderPane();
+		textBorder = new BorderPane();
 		area = new TextArea(inputText);
 		this.inputText = inputText;
 		Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
-		area.setPrefHeight(bounds.getHeight()-175);
+
+		area.setPrefHeight((bounds.getHeight()-175)/2);
 		area.setPrefWidth(bounds.getWidth()/2);
 		pane = new ScrollPane(area);
 		pane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+
+		outputDisplay = new TextArea("Processor output:\n");
+		outputDisplay.setPrefHeight((bounds.getHeight()-175)/2);
+		outputDisplay.setPrefWidth(bounds.getWidth()/2);
+		outputDisplayPane = new ScrollPane(outputDisplay);
+		outputDisplayPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+
+		textBorder.setBottom(outputDisplayPane);
+		textBorder.setTop(pane);
+
 		registerDisplay = new GridPane();
 		memDisplay = new GridPane();
 		byteButton = new RadioButton("Byte");
@@ -102,6 +117,7 @@ public class YOTab extends Tab {
 			public void handle(ActionEvent arg0) {
 				Processor.initialize();
 				refresh();
+				initializeDisplay();
 			}
 		});
 		step = new Button("Step");
@@ -111,6 +127,7 @@ public class YOTab extends Tab {
 			public void handle(ActionEvent arg0) {
 				Processor.step();
 				refresh();
+				stepDisplay();
 			}
 		});
 		run = new Button("Run");
@@ -120,6 +137,7 @@ public class YOTab extends Tab {
 			public void handle(ActionEvent arg0) {
 				Processor.run();
 				refresh();
+				runDisplay();
 			}
 		});
 		clockPulse = new Button("Clock Pulse");
@@ -133,12 +151,88 @@ public class YOTab extends Tab {
 		});
 		box.getChildren().addAll(initialize,step,run,clockPulse);
 		border.setBottom(box);
-		border.setLeft(pane);
+		border.setLeft(textBorder);
 		border.setRight(displayPane);
 		border.setCenter(memDisplayScrollPane);
+		
 		this.setContent(border);
 		this.setText(fileName);
 	}
+
+	protected void stepDisplay() {
+		outputDisplay.setText(outputDisplay.getText() + "STEP:\n");
+		if(Processor.status.equals("HLT")) {
+			outputDisplay.setText(outputDisplay.getText() + "PC: " + displayText(Processor.completedInstruction.address) + "\n");
+			outputDisplay.setText(outputDisplay.getText() + "Completed Instruction: " + Processor.completedInstruction.buildDisplayInstruction() +"\n");
+			outputDisplay.setText(outputDisplay.getText() + registerDisplay());
+			outputDisplay.setText(outputDisplay.getText() + memoryDisplay());
+			outputDisplay.setText(outputDisplay.getText() + registerDifference(Processor.initialRegisterFile, Processor.finalRegisterFile, "STEP complete"));
+			outputDisplay.setText(outputDisplay.getText() + memoryDifference(Processor.initialMemory, Processor.finalMemory, "STEP complete"));
+		} else {
+			outputDisplay.setText(outputDisplay.getText() + "PC: " + displayText(Processor.completedInstruction.address) + "\n");
+			outputDisplay.setText(outputDisplay.getText() + "Completed Instruction: " + Processor.completedInstruction.buildDisplayInstruction() +"\n");
+			outputDisplay.setText(outputDisplay.getText() + registerDifference(Processor.stepBeforeReg, Processor.stepAfterReg, "STEP"));
+			outputDisplay.setText(outputDisplay.getText() + memoryDifference(Processor.stepBeforeMem, Processor.stepAfterMem, "STEP"));
+		}
+	}
+
+	protected void runDisplay() {
+		outputDisplay.setText(outputDisplay.getText() + "RUN:\n");
+		outputDisplay.setText(outputDisplay.getText() + "PC: " + displayText(Processor.registerFile.get("pc")) + "\n");
+		outputDisplay.setText(outputDisplay.getText() + registerDisplay());
+		outputDisplay.setText(outputDisplay.getText() + memoryDisplay());
+		outputDisplay.setText(outputDisplay.getText() + registerDifference(Processor.initialRegisterFile, Processor.finalRegisterFile, "RUN"));
+		outputDisplay.setText(outputDisplay.getText() + memoryDifference(Processor.initialMemory, Processor.finalMemory, "RUN"));
+	}
+
+	public void initializeDisplay() {
+		outputDisplay.setText("Processor output:\n\n Initialize:\n");
+		if(Processor.status.equals("HLT")) {
+			outputDisplay.setText(outputDisplay.getText() + "Program failed to initialize, check that all memory locations are valid");
+		} else {
+			outputDisplay.setText(outputDisplay.getText() + "PC: " + displayText(Processor.registerFile.get("pc")) + "\n\n");
+			outputDisplay.setText(outputDisplay.getText() + registerDisplay() +"\n");
+			outputDisplay.setText(outputDisplay.getText() + memoryDisplay()+ "\n");
+		}
+	}
+
+	private String registerDisplay() {
+		String output = "Register File:\n";
+		for(String reg: Processor.registerFile.keySet()) {
+			output += String.format("%3s", reg) + " = " + displayText(Processor.registerFile.get(reg))+ "\n";
+		}
+		return output+"\n";
+	}
+
+	private String registerDifference(TreeMap<String, DoubleWord> before, TreeMap<String, DoubleWord> after, String text) {
+		String output = "Register File Differences: " + text + ":\n";
+		ArrayList<String> dif = RegisterFile.getDif(before, after);
+		for(String s: dif) {
+			output += String.format("%3s", s) +  ": " + displayText(before.get(s)) + "====>" + displayText(after.get(s)) +"\n";
+		}
+		return output+"\n";
+	}
+
+	private String memoryDisplay() {
+		String output = "Memory:\n";
+		for(String reg: Processor.registerFile.keySet()) {
+			output += String.format("%3s", reg) + " = " + displayText(Processor.registerFile.get(reg))+ "\n";
+		}
+		return output+"\n";
+	}
+
+	private String memoryDifference(HashMap<Long, BYTE> before, HashMap<Long, BYTE> after, String text) {
+		String output = "Memory Differences: " + text + ":\n";
+		ArrayList<Long> dif = Memory.getDif(before, after);
+		for(Long l: dif) {
+			if(before.containsKey(l))
+				output += "0x" +Long.toString(l, 16) + ": " + displayText(before.get(l)) + "====>" + displayText(after.get(l)) +"\n";
+			else 
+				output += "0x" +Long.toString(l, 16) + ": " + displayText(new BYTE()) + "====>" + displayText(after.get(l)) +"\n";
+		}
+		return output+"\n";
+	}
+
 
 	public void refresh() {
 		registerDisplay.getChildren().clear();
@@ -202,7 +296,7 @@ public class YOTab extends Tab {
 			registerDisplay.add(new TextField("0x"+fetchAddress.displayToString()), 1, row);
 		}
 		row++;
-		
+
 		DoubleWord decodeAddress = Processor.pcAddresses[1];
 		registerDisplay.add(new TextField("Decode"), 0, row);
 		if(decodeAddress == null) {
@@ -211,7 +305,7 @@ public class YOTab extends Tab {
 			registerDisplay.add(new TextField("0x"+decodeAddress.displayToString()), 1, row);
 		}
 		row++;
-		
+
 		DoubleWord executeAddress = Processor.pcAddresses[2];
 		registerDisplay.add(new TextField("Execute"), 0, row);
 		if(executeAddress == null) {
@@ -220,7 +314,7 @@ public class YOTab extends Tab {
 			registerDisplay.add(new TextField("0x"+executeAddress.displayToString()), 1, row);
 		}
 		row++;
-		
+
 		DoubleWord memoryAddress = Processor.pcAddresses[3];
 		registerDisplay.add(new TextField("Memory"), 0, row);
 		if(memoryAddress == null) {
@@ -229,7 +323,7 @@ public class YOTab extends Tab {
 			registerDisplay.add(new TextField("0x"+memoryAddress.displayToString()), 1, row);
 		}
 		row++;
-		
+
 		DoubleWord writeBackAddress = Processor.pcAddresses[4];
 		registerDisplay.add(new TextField("Write Back"), 0, row);
 		if(writeBackAddress == null) {
@@ -240,7 +334,7 @@ public class YOTab extends Tab {
 		row++;
 		return row;
 	}
-	
+
 	private boolean validAddress(DoubleWord address) {
 		Scanner scan = new Scanner(inputText);
 		while(scan.hasNextLine()) {
@@ -309,8 +403,8 @@ public class YOTab extends Tab {
 			return "0x"+val.displayToString();
 		}
 	}
-	
-	
-	
+
+
+
 
 }

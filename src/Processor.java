@@ -8,13 +8,14 @@ public class Processor {
 	public static final RegisterFile registerFile = new RegisterFile();
 	public static final DoubleWord[] pcAddresses = new DoubleWord[5];
 	public static final Instruction[] instructionStages = new Instruction[4];
-	public static TreeMap<String, DoubleWord> intitalRegisterFile, stepBeforeReg, stepAfterReg, finalRegisterFile;
-	public static HashMap<Long, BYTE> intitalMemory, stepBeforeMem, stepAfterMem, finalMemory;
+	public static TreeMap<String, DoubleWord> initialRegisterFile, stepBeforeReg, stepAfterReg, finalRegisterFile;
+	public static HashMap<Long, BYTE> initialMemory, stepBeforeMem, stepAfterMem, finalMemory;
 	public static String status;
 	public static boolean JALRStall, stopFetching;
 	public static int stopCount;
 	private static boolean JALRTempStall;
 	public static boolean validStop;
+	public static Instruction completedInstruction;
 
 	//returns true if a instruction went through writeback
 	private static boolean pipeLineIncrement() {
@@ -26,6 +27,7 @@ public class Processor {
 		}
 		if(instructionStages[WRITE_BACK_INSTRUCTION_POSITION] != null) 
 			instructionStages[WRITE_BACK_INSTRUCTION_POSITION].stage = FINISHED;
+		completedInstruction = instructionStages[WRITE_BACK_INSTRUCTION_POSITION];
 		pcAddresses[WRITE_BACK_ADDRESS_POSITION] = null;
 		instructionStages[WRITE_BACK_INSTRUCTION_POSITION] = null;
 
@@ -586,8 +588,8 @@ public class Processor {
 		}
 		System.out.println(pcAddresses[0]);
 		System.out.println("finished");
-		Processor.intitalMemory = Memory.createImage();
-		Processor.intitalRegisterFile = Processor.registerFile.createImage();
+		Processor.initialMemory = Memory.createImage();
+		Processor.initialRegisterFile = Processor.registerFile.createImage();
 		finalMemory = stepBeforeMem = stepAfterMem = null;
 		finalRegisterFile = stepBeforeReg = stepAfterReg = null;
 		stopCount = -1;
