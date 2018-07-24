@@ -248,28 +248,29 @@ public class Processor {
 			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
 			constant = ALU.signExtension(constant, false, 64);
 			c = new DoubleWord(constant);
-			currentInstruction.valP = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
+			currentInstruction.valP = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,false)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
 			break;
 		case "BLTU":
 			constant = new boolean[13];
 			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
 			constant = ALU.signExtension(constant, false, 64);
 			c = new DoubleWord(constant);
-			currentInstruction.valP = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,false)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
+			System.out.println("RS1Val: " + currentInstruction.RS1Val + "RS2Val: "+ currentInstruction.RS2Val);
+			currentInstruction.valP = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
 			break;	
 		case "BGE":
 			constant = new boolean[13];
 			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
 			constant = ALU.signExtension(constant, false, 64);
 			c = new DoubleWord(constant);
-			currentInstruction.valP = (!currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
+			currentInstruction.valP = (!currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,false)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
 			break;
 		case "BGEU":
 			constant = new boolean[13];
 			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
 			constant = ALU.signExtension(constant, false, 64);
 			c = new DoubleWord(constant);
-			currentInstruction.valP = (!currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,false)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
+			currentInstruction.valP = (!currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
 			break;	
 		case "JAL":
 			constant = new boolean[21];
