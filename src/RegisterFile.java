@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.TreeMap;
 
@@ -44,6 +45,23 @@ public class RegisterFile extends TreeMap<String, DoubleWord>{
 		
 	}
 	
+	public TreeMap<String, DoubleWord> createImage() {
+		TreeMap<String, DoubleWord> image = new TreeMap<String, DoubleWord>(new RegisterComparator());
+		for(String reg: this.keySet()) {
+			image.put(reg, this.get(reg));
+		}
+		return image;
+	}
+	
+	
+	public static ArrayList<String> getDif(TreeMap<String, DoubleWord> registerFileBefore, TreeMap<String, DoubleWord> registerFileAfter) {
+		ArrayList<String> dif = new ArrayList<String>();
+		for(String reg: registerFileBefore.keySet()) {
+			if(!registerFileBefore.get(reg).equals(registerFileAfter.get(reg)))
+				dif.add(reg);
+		}
+		return dif;
+	}
 	
 }
 
@@ -60,7 +78,6 @@ class RegisterComparator implements Comparator<String> {
 		int i2 = Integer.parseInt(o2.substring(1));
 		return ((i1-i2) < 0) ? -1 : 1;
 	}
-
 	
 }
 

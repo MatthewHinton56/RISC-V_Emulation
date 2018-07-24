@@ -357,6 +357,8 @@ public class ALU {
 	}
 
 	public static long calculateValueSigned(boolean[] bitArray) {
+		if(bitArray == null)
+			return 0;
 		long val = (bitArray[bitArray.length-1]) ? ((long)Math.pow(-2, bitArray.length-1)) : 0;
 		for(int pos = 0; pos < bitArray.length-1; pos++) {
 			if(bitArray[pos]) {

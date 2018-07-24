@@ -24,7 +24,9 @@ public class Instruction {
 	boolean memory;
 	boolean memLoaded, branch, exeFinished, bubble;
 	public boolean stop;
-	public Instruction(boolean[] instructionBitEncoding) {
+	private DoubleWord address;
+	public Instruction(boolean[] instructionBitEncoding, DoubleWord address) {
+		this.address = address;
 		String opCode = bitToString(0,6, instructionBitEncoding);
 		if(!contains(VALID_OPCODES, opCode)) {
 			stop = true;
@@ -61,7 +63,7 @@ public class Instruction {
 		bubble = true;
 		instruction = "BUBBLE";
 	}
-	
+
 	private void generateIType(boolean[] instructionBitEncoding, String opCode) {
 		immediate = new boolean[12];
 		System.arraycopy(instructionBitEncoding, 20, immediate, 0, 12);
@@ -89,12 +91,12 @@ public class Instruction {
 		}
 		if(instruction.contains("|"))
 			instruction = (!instructionBitEncoding[30]) ? instruction.substring(0, instruction.indexOf("|")) : instruction.substring(instruction.indexOf("|")+1);
-		String Rd = getRegister(7,11,instructionBitEncoding); 
-		System.out.println(Rd);
-		String Rs1 = getRegister(15,19,instructionBitEncoding);
-		this.Rd = Rd;
-		this.Rs1 = Rs1;
-		this.Rs2 = "x0";
+			String Rd = getRegister(7,11,instructionBitEncoding); 
+			System.out.println(Rd);
+			String Rs1 = getRegister(15,19,instructionBitEncoding);
+			this.Rd = Rd;
+			this.Rs1 = Rs1;
+			this.Rs2 = "x0";
 	}
 
 	private void generateRType(boolean[] instructionBitEncoding, String opCode) {
@@ -110,12 +112,12 @@ public class Instruction {
 		}
 		if(instruction.contains("|"))
 			instruction = (!instructionBitEncoding[30]) ? instruction.substring(0, instruction.indexOf("|")) : instruction.substring(instruction.indexOf("|")+1);
-		String Rd = getRegister(7,11,instructionBitEncoding); 
-		String Rs1 = getRegister(15,19,instructionBitEncoding);
-		String Rs2 = getRegister(20,24,instructionBitEncoding);
-		this.Rd = Rd;
-		this.Rs1 = Rs1;
-		this.Rs2 = Rs2;
+			String Rd = getRegister(7,11,instructionBitEncoding); 
+			String Rs1 = getRegister(15,19,instructionBitEncoding);
+			String Rs2 = getRegister(20,24,instructionBitEncoding);
+			this.Rd = Rd;
+			this.Rs1 = Rs1;
+			this.Rs2 = Rs2;
 	}
 
 	private void generateSType(boolean[] instructionBitEncoding, String opCode) {
@@ -183,6 +185,32 @@ public class Instruction {
 		this.Rs2 = "x0";
 	}
 
+	public String buildDisplayInstruction() {
+		String display;
+		String imm;
+		switch(type) {
+		case "R":
+			display = R_TYPE_FORMAT;
+			break;
+		case "I":
+			display = I_TYPE_FORMAT;
+			break;
+		case "SB":
+			display = SB_TYPE_FORMAT;
+		case "S":
+			display = S_TYPE_FORMAT;
+		default:
+			display = U_TYPE_FORMAT;
+		}
+		display = display.replace("RD", this.Rd);
+		display = display.replace("RS1", this.Rs1);
+		display = display.replace("RS2", this.Rs2);
+		display = display.replace("instruction", instruction);
+		imm = ALU.calculateValueSigned(immediate) +"";
+		display = display.replace("IMM", imm);
+		return display;
+	}
+
 	//Creates bit string from start <= end, 0 <= start <= end, 0 <= end < bitArray.length
 	public static String bitToString(int start, int end,boolean[] bitArray) {
 		String bitString = "";
@@ -243,7 +271,7 @@ public class Instruction {
 	public static final String FIVE = "101";
 	public static final String SIX = "011";
 	public static final String SEVEN = "111";
-	
+
 	public static final String[] NON_TRADITIONAL_PC = {JALR, JAL, BRANCH};
 	public static final String[] DATA_STALL = {LOAD};
 
@@ -325,7 +353,7 @@ public class Instruction {
 		JALR_FUNCT3_TO_FUNCTION = new HashMap<String, String> ();
 		JALR_FUNCT3_TO_FUNCTION.put(ZERO, "JALR");
 	}
-	
+
 	private static void generateMExtensionMap() {
 		MOP_FUNCT3_TO_FUNCTION = new HashMap<String, String> ();
 		MOP_FUNCT3_TO_FUNCTION.put(ZERO, "MUL");
@@ -336,7 +364,7 @@ public class Instruction {
 		MOP_FUNCT3_TO_FUNCTION.put(FIVE, "DIVU");	
 		MOP_FUNCT3_TO_FUNCTION.put(SIX, "REM");
 		MOP_FUNCT3_TO_FUNCTION.put(SEVEN, "REMU");
-		
+
 		MOP_32_FUNCT3_TO_FUNCTION = new HashMap<String, String> ();
 		MOP_32_FUNCT3_TO_FUNCTION.put(ZERO, "MULW");
 		MOP_32_FUNCT3_TO_FUNCTION.put(FOUR, "DIVW");
@@ -344,7 +372,7 @@ public class Instruction {
 		MOP_32_FUNCT3_TO_FUNCTION.put(SIX, "REMW");
 		MOP_32_FUNCT3_TO_FUNCTION.put(SEVEN, "REMUW");
 	}
-	
+
 	private static void generateExtensionMap() {
 		INSTRUCTION_TO_EXTENSION = new HashMap<String, String> ();
 		INSTRUCTION_TO_EXTENSION.put("MUL", "M");
@@ -355,19 +383,19 @@ public class Instruction {
 		INSTRUCTION_TO_EXTENSION.put("DIVU", "M");
 		INSTRUCTION_TO_EXTENSION.put("REM", "M");
 		INSTRUCTION_TO_EXTENSION.put("REMU", "M");
-		
+
 		INSTRUCTION_TO_EXTENSION.put("MUL", "M");
 		INSTRUCTION_TO_EXTENSION.put("DIV", "M");
 		INSTRUCTION_TO_EXTENSION.put("DIVU", "M");
 		INSTRUCTION_TO_EXTENSION.put("REM", "M");
 		INSTRUCTION_TO_EXTENSION.put("REMU", "M");
 	}
-	
+
 	public static String getExtension(String instruction) {
 		return INSTRUCTION_TO_EXTENSION.getOrDefault(instruction, "I");
 	}
-	
-	
+
+
 	public static HashMap<String, String> getOpMap(String instruction) {
 		String opCode = InstructionBuilder.INSTRUCTION_TO_OPCODE.get(instruction);
 		System.out.println(instruction+" "+ opCode);
@@ -385,11 +413,11 @@ public class Instruction {
 		default:
 			return Instruction.OP_32_FUNCT3_TO_FUNCTION;
 		}
-		
-		
-		
+
+
+
 	}
-	
+
 	//end - start + 1 == 5
 	public static String getRegister(int start, int end, boolean[] bitArray) {
 		int val = 0;
@@ -400,35 +428,35 @@ public class Instruction {
 		return "x" + val;
 	}
 
-	
+
 	public static String[] M_EXTENSION_INSTRUCTION = {"MUL", "MULH", "MULHSU", "MULHU", "DIV", "DIVU", "REM", "REMU", "MULW", "DIVW", "DIVUW", "REMW", "REMUW"};
-	
+
 	public static boolean isMType(String instruction) {
 		return Instruction.contains(M_EXTENSION_INSTRUCTION, instruction);
 	}
-	
+
 	private static void generateInstructionArchetypes() {
 		INSTRUCTION_TO_ARCHETYPE = new HashMap<String, String> ();
 		INSTRUCTION_TO_ARCHETYPE.put("ADD", "add rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE.put("ADDW", "addw rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE.put("ADDI", "addi rd, rs1, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("ADDIW", "addiw rd, rs1, imm");
-		
+
 		INSTRUCTION_TO_ARCHETYPE.put("AND", "and rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE.put("ANDI", "andi rd, rs1, imm");
-		
+
 		INSTRUCTION_TO_ARCHETYPE.put("AUIPC", "auipc rd, imm");
-		
+
 		INSTRUCTION_TO_ARCHETYPE.put("BEQ", "beq rs1, rs2, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("BNE", "bne rs1, rs2, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("BGE", "bge rs1, rs2, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("BGEU", "bgeu rs1, rs2, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("BLT", "blt rs1, rs2, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("BLTU", "bltu rs1, rs2, imm");
-		
+
 		INSTRUCTION_TO_ARCHETYPE.put("JAL", "jal rd, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("JALR", "jalr rd, rs1, imm");
-		
+
 		INSTRUCTION_TO_ARCHETYPE.put("LB", "lb rd, rs1, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("LBU", "lbu rd, rs1, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("LH", "lh rd, rs1, imm");
@@ -436,60 +464,67 @@ public class Instruction {
 		INSTRUCTION_TO_ARCHETYPE.put("LW", "lw rd, rs1, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("LWU", "lwu rd, rs1, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("LD", "ld rd, rs1, imm");
-		
+
 		INSTRUCTION_TO_ARCHETYPE.put("SB", "sb rs2, rs1, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("SH", "sh rs2, rs1, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("SW", "sw rs2, rs1, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("SD", "sd rs2, rs1, imm");
-		
+
 		INSTRUCTION_TO_ARCHETYPE.put("LUI", "lui rd, imm");
-		
+
 		INSTRUCTION_TO_ARCHETYPE.put("OR", "or rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE.put("ORI", "ori rd, rs1, imm");
-		
+
 		INSTRUCTION_TO_ARCHETYPE.put("XOR", "xor rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE.put("XORI", "xori rd, rs1, imm");
-		
+
 		INSTRUCTION_TO_ARCHETYPE.put("SLL", "sll rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE.put("SLLW", "sllw rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE.put("SLLI", "slli rd, rs1, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("SLLIW", "slliw rd, rs1, imm");
-		
+
 		INSTRUCTION_TO_ARCHETYPE.put("SRA", "sra rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE.put("SRAW", "sraw rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE.put("SRAI", "srai rd, rs1, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("SRAIW", "sraiw rd, rs1, imm");
-		
+
 		INSTRUCTION_TO_ARCHETYPE.put("SRL", "sra rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE.put("SRLW", "sraw rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE.put("SRLI", "srai rd, rs1, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("SRLIW", "sraiw rd, rs1, imm");
-		
+
 		INSTRUCTION_TO_ARCHETYPE.put("SLT", "slt rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE.put("SLTW", "sltw rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE.put("SLTI", "slti rd, rs1, imm");
 		INSTRUCTION_TO_ARCHETYPE.put("SLTIW", "sltiw rd, rs1, imm");
-		
+
 		INSTRUCTION_TO_ARCHETYPE.put("SUB", "sub rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE.put("SUBW", "subw rd, rs1, rs2");
-		
+
 		INSTRUCTION_TO_ARCHETYPE_M = new HashMap<String, String> ();
-		
+
 		INSTRUCTION_TO_ARCHETYPE_M.put("MUL", "mul rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE_M.put("MULH", "mulh rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE_M.put("MULHSU", "mulhsu rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE_M.put("MULHU", "mulhu rd, rs1, rs2");
-		
+
 		INSTRUCTION_TO_ARCHETYPE_M.put("DIV", "div rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE_M.put("DIVU", "divu rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE_M.put("DIVUW", "divuw rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE_M.put("DIVW", "divw rd, rs1, rs2");
-		
+
 		INSTRUCTION_TO_ARCHETYPE_M.put("REM", "rem rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE_M.put("REMU", "remu rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE_M.put("REMUW", "remuw rd, rs1, rs2");
 		INSTRUCTION_TO_ARCHETYPE_M.put("REMW", "remw rd, rs1, rs2");
 	}
-	
-	
+
+	public static final String R_TYPE_FORMAT = "instruction RD, RS1, RS2";
+	public static final String I_TYPE_FORMAT = "instruction RD, RS1, IMM";
+	public static final String U_TYPE_FORMAT = "instruction RD, IMM";
+	public static final String UJ_TYPE_FORMAT = "instruction RD, IMM";
+	public static final String SB_TYPE_FORMAT = "instruction RS1, RS2, IMM";
+	public static final String S_TYPE_FORMAT = "instruction RS2, RS1, IMM";
+
+
 }

@@ -1,4 +1,6 @@
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.TreeMap;
 
 
 public class Processor {
@@ -6,11 +8,13 @@ public class Processor {
 	public static final RegisterFile registerFile = new RegisterFile();
 	public static final DoubleWord[] pcAddresses = new DoubleWord[5];
 	public static final Instruction[] instructionStages = new Instruction[4];
+	public static TreeMap<String, DoubleWord> intitalRegisterFile, stepBeforeReg, stepAfterReg, finalRegisterFile;
+	public static HashMap<Long, BYTE> intitalMemory, stepBeforeMem, stepAfterMem, finalMemory;
 	public static String status;
 	public static boolean JALRStall, stopFetching;
 	public static int stopCount;
 	private static boolean JALRTempStall;
-
+	public static boolean validStop;
 
 	//returns true if a instruction went through writeback
 	private static boolean pipeLineIncrement() {
@@ -122,12 +126,13 @@ public class Processor {
 		}
 			
 		boolean[] instructionArray = nextInstruction.bitArray;
-		Instruction currentInstruction = new Instruction(instructionArray);
+		Instruction currentInstruction = new Instruction(instructionArray,pcAddresses[0]);
 		if(currentInstruction.stop) { 
 			stopFetching = true;
 			stopCount = 4;
 			return null;
 		}
+		validStop = (currentInstruction.instruction.equals("HALT"));
 		currentInstruction.valP = predictPC(currentInstruction);
 		if(currentInstruction.instruction.equals("JALR")) {
 			JALRStall = true;
@@ -581,6 +586,10 @@ public class Processor {
 		}
 		System.out.println(pcAddresses[0]);
 		System.out.println("finished");
+		Processor.intitalMemory = Memory.createImage();
+		Processor.intitalRegisterFile = Processor.registerFile.createImage();
+		finalMemory = stepBeforeMem = stepAfterMem = null;
+		finalRegisterFile = stepBeforeReg = stepAfterReg = null;
 		stopCount = -1;
 		registerFile.reset();
 		JALRStall = false;
@@ -603,11 +612,23 @@ public class Processor {
 
 	public static void step() {
 		if(status.equals("AOK")) {
+			Processor.stepBeforeMem = Memory.createImage();
+			Processor.stepBeforeReg = Processor.registerFile.createImage();
 			while(status.equals("AOK") && Processor.pipeLineIncrement() == false) {
 				status = (validInstruction()) ? "AOK" : "HLT";
 			}
 			status = (validInstruction()) ? "AOK" : "HLT";
+			if(status.equals("AOK")) {
+				Processor.stepAfterMem = Memory.createImage();
+				Processor.stepAfterReg = Processor.registerFile.createImage();
+			} else {
+				Processor.stepBeforeMem = Processor.finalMemory = Memory.createImage();
+				Processor.stepBeforeReg = Processor.finalRegisterFile = Processor.registerFile.createImage();
+			}
+			
+			
 		}
+		
 	}
 
 	private static boolean validInstruction() {
@@ -622,6 +643,8 @@ public class Processor {
 		while(status.equals("AOK")) {
 			step();
 		}
+		Processor.finalMemory = Memory.createImage();
+		Processor.finalRegisterFile = Processor.registerFile.createImage();
 	}
 	
 	public static void clockPulse() {

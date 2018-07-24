@@ -1,4 +1,6 @@
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.TreeMap;
 
 public class Memory {
 	public static final HashMap<Long,BYTE> memory = new HashMap<Long,BYTE>();
@@ -125,6 +127,23 @@ public class Memory {
 		default:
 			return null;
 		}
+	}
+	
+	public static HashMap<Long, BYTE> createImage() {
+		HashMap<Long, BYTE> image = new HashMap<Long, BYTE>();
+		for(long reg: memory.keySet()) {
+			image.put(reg, memory.get(reg));
+		}
+		return image;
+	}
+	
+	public static ArrayList<Long> getDif(TreeMap<Long, DoubleWord> memoryBefore, TreeMap<Long, DoubleWord> memoryAfter) {
+		ArrayList<Long> dif = new ArrayList<Long>();
+		for(Long reg: memoryAfter.keySet()) {
+			if(!memoryBefore.containsKey(reg) || !memoryAfter.get(reg).equals(memoryBefore.get(reg)))
+				dif.add(reg);
+		}
+		return dif;
 	}
 
 	//public static void storeInstruction(long position, String[] instruction) {
