@@ -87,6 +87,37 @@ public class InstructionBuilder {
 		INSTRUCTION_TO_FUNCT7.put("SUBW", "0000010");
 		INSTRUCTION_TO_FUNCT7.put("SRAW", "0000010");
 		
+		//M Extension
+		
+		INSTRUCTION_TO_OPCODE.put("MUL", Instruction.OP);
+		INSTRUCTION_TO_OPCODE.put("MULH", Instruction.OP);
+		INSTRUCTION_TO_OPCODE.put("MULHSU", Instruction.OP);
+		INSTRUCTION_TO_OPCODE.put("MULHU", Instruction.OP);
+		INSTRUCTION_TO_OPCODE.put("DIV", Instruction.OP);
+		INSTRUCTION_TO_OPCODE.put("DIVU", Instruction.OP);
+		INSTRUCTION_TO_OPCODE.put("REM", Instruction.OP);
+		INSTRUCTION_TO_OPCODE.put("REMU", Instruction.OP);
+		
+		INSTRUCTION_TO_OPCODE.put("MUL", Instruction.OP_32);
+		INSTRUCTION_TO_OPCODE.put("DIV", Instruction.OP_32);
+		INSTRUCTION_TO_OPCODE.put("DIVU", Instruction.OP_32);
+		INSTRUCTION_TO_OPCODE.put("REM", Instruction.OP_32);
+		INSTRUCTION_TO_OPCODE.put("REMU", Instruction.OP_32);
+		
+		INSTRUCTION_TO_FUNCT7.put("MUL", "1000000");
+		INSTRUCTION_TO_FUNCT7.put("MULH", "1000000");
+		INSTRUCTION_TO_FUNCT7.put("MULHSU", "1000000");
+		INSTRUCTION_TO_FUNCT7.put("MULHU", "1000000");
+		INSTRUCTION_TO_FUNCT7.put("DIV", "1000000");
+		INSTRUCTION_TO_FUNCT7.put("DIVU", "1000000");
+		INSTRUCTION_TO_FUNCT7.put("REM", "1000000");
+		INSTRUCTION_TO_FUNCT7.put("REMU", "1000000");
+		
+		INSTRUCTION_TO_FUNCT7.put("MUL", "1000000");
+		INSTRUCTION_TO_FUNCT7.put("DIV", "1000000");
+		INSTRUCTION_TO_FUNCT7.put("DIVU", "1000000");
+		INSTRUCTION_TO_FUNCT7.put("REM", "1000000");
+		INSTRUCTION_TO_FUNCT7.put("REMU", "1000000");
 	}
 
 	public static String getFunct3(String function, HashMap<String, String> map) {
@@ -114,6 +145,8 @@ public class InstructionBuilder {
 		}
 		return null;
 	}
+
+
 	//Precondition: Rd, Rs1, Rs2, and imm already converted to bitStrings
 	public static boolean[] generateInstruction(String function, boolean[] Rd, boolean[] Rs1, boolean[] Rs2, boolean[] imm) {
 		String opCode = INSTRUCTION_TO_OPCODE.get(function);
@@ -149,11 +182,11 @@ public class InstructionBuilder {
 			String funct7 = "";
 			switch(opCode) {
 			case Instruction.OP:
-				funct3 = getFunct3(function,Instruction.OP_FUNCT3_TO_FUNCTION);
+				funct3 = getFunct3(function,Instruction.getOpMap(function));
 				funct7 = INSTRUCTION_TO_FUNCT7.getOrDefault(function, InstructionBuilder.DEFAULTRTYPEFUNCT7);
 				break;
 			case Instruction.OP_32:
-				funct3 = getFunct3(function,Instruction.OP_32_FUNCT3_TO_FUNCTION);
+				funct3 = getFunct3(function,Instruction.getOpMap(function));
 				funct7 = INSTRUCTION_TO_FUNCT7.getOrDefault(function, InstructionBuilder.DEFAULTRTYPEFUNCT7);
 				break;
 			}

@@ -4,11 +4,14 @@ import java.util.HashMap;
 public class Instruction {
 	static {
 		generateMaps();
+		generateExtensionMap();
+		generateMExtensionMap();
 	}
 	public static HashMap<String, String> U_OPCODE_TO_INSTRUCTION, UJ_OPCODE_TO_INSTRUCTION;
 	public static HashMap<String, String> BRANCH_FUNCT3_TO_FUNCTION, STORE_FUNCT3_TO_FUNCTION,
 	OP_FUNCT3_TO_FUNCTION, OP_32_FUNCT3_TO_FUNCTION, OP_32_IMM_FUNCT3_TO_FUNCTION, LOAD_FUNCT3_TO_FUNCTION, OP_IMM_FUNCT3_TO_FUNCTION,
-	MISC_MEM_FUNCT3_TO_FUNCTION, SYSTEM_FUNCT3_TO_FUNCTION, JALR_FUNCT3_TO_FUNCTION;
+	MISC_MEM_FUNCT3_TO_FUNCTION, SYSTEM_FUNCT3_TO_FUNCTION, JALR_FUNCT3_TO_FUNCTION, MOP_32_FUNCT3_TO_FUNCTION, MOP_FUNCT3_TO_FUNCTION;
+	public static HashMap<String,String> INSTRUCTION_TO_EXTENSION;
 
 	boolean[] immediate;
 	String Rd, Rs1, Rs2;
@@ -57,6 +60,7 @@ public class Instruction {
 		bubble = true;
 		instruction = "BUBBLE";
 	}
+	
 	private void generateIType(boolean[] instructionBitEncoding, String opCode) {
 		immediate = new boolean[12];
 		System.arraycopy(instructionBitEncoding, 20, immediate, 0, 12);
@@ -95,12 +99,13 @@ public class Instruction {
 	private void generateRType(boolean[] instructionBitEncoding, String opCode) {
 		type = "R";
 		String funct3 = bitToString(12,14,instructionBitEncoding);
+		boolean mType = instructionBitEncoding[25];
 		switch(opCode) {
 		case OP:
-			instruction = OP_FUNCT3_TO_FUNCTION.get(funct3);
+			instruction = (mType) ? MOP_FUNCT3_TO_FUNCTION.get(funct3) : OP_FUNCT3_TO_FUNCTION.get(funct3);
 			break;
 		case OP_32:
-			instruction = OP_32_FUNCT3_TO_FUNCTION.get(funct3);
+			instruction = (mType) ? MOP_32_FUNCT3_TO_FUNCTION.get(funct3) : OP_32_FUNCT3_TO_FUNCTION.get(funct3);
 		}
 		if(instruction.contains("|"))
 			instruction = (!instructionBitEncoding[30]) ? instruction.substring(0, instruction.indexOf("|")) : instruction.substring(instruction.indexOf("|")+1);
@@ -241,6 +246,7 @@ public class Instruction {
 	public static final String[] NON_TRADITIONAL_PC = {JALR, JAL, BRANCH};
 	public static final String[] DATA_STALL = {LOAD};
 
+
 	public static void generateMaps() {
 		U_OPCODE_TO_INSTRUCTION = new HashMap<String, String> ();
 		U_OPCODE_TO_INSTRUCTION.put(LUI, "LUI");
@@ -318,6 +324,70 @@ public class Instruction {
 		JALR_FUNCT3_TO_FUNCTION = new HashMap<String, String> ();
 		JALR_FUNCT3_TO_FUNCTION.put(ZERO, "JALR");
 	}
+	
+	private static void generateMExtensionMap() {
+		MOP_FUNCT3_TO_FUNCTION = new HashMap<String, String> ();
+		MOP_FUNCT3_TO_FUNCTION.put(ZERO, "MUL");
+		MOP_FUNCT3_TO_FUNCTION.put(ONE, "MULH");
+		MOP_FUNCT3_TO_FUNCTION.put(TWO, "MULHSU");
+		MOP_FUNCT3_TO_FUNCTION.put(THREE, "MULHU");
+		MOP_FUNCT3_TO_FUNCTION.put(FOUR, "DIV");
+		MOP_FUNCT3_TO_FUNCTION.put(FIVE, "DIVU");	
+		MOP_FUNCT3_TO_FUNCTION.put(SIX, "REM");
+		MOP_FUNCT3_TO_FUNCTION.put(SEVEN, "REMU");
+		
+		MOP_32_FUNCT3_TO_FUNCTION = new HashMap<String, String> ();
+		MOP_32_FUNCT3_TO_FUNCTION.put(ZERO, "MULW");
+		MOP_32_FUNCT3_TO_FUNCTION.put(FOUR, "DIVW");
+		MOP_32_FUNCT3_TO_FUNCTION.put(FIVE, "DIVW");	
+		MOP_32_FUNCT3_TO_FUNCTION.put(SIX, "REMW");
+		MOP_32_FUNCT3_TO_FUNCTION.put(SEVEN, "REMUW");
+	}
+	
+	private static void generateExtensionMap() {
+		INSTRUCTION_TO_EXTENSION = new HashMap<String, String> ();
+		INSTRUCTION_TO_EXTENSION.put("MUL", "M");
+		INSTRUCTION_TO_EXTENSION.put("MULH", "M");
+		INSTRUCTION_TO_EXTENSION.put("MULHSU", "M");
+		INSTRUCTION_TO_EXTENSION.put("MULHU", "M");
+		INSTRUCTION_TO_EXTENSION.put("DIV", "M");
+		INSTRUCTION_TO_EXTENSION.put("DIVU", "M");
+		INSTRUCTION_TO_EXTENSION.put("REM", "M");
+		INSTRUCTION_TO_EXTENSION.put("REMU", "M");
+		
+		INSTRUCTION_TO_EXTENSION.put("MUL", "M");
+		INSTRUCTION_TO_EXTENSION.put("DIV", "M");
+		INSTRUCTION_TO_EXTENSION.put("DIVU", "M");
+		INSTRUCTION_TO_EXTENSION.put("REM", "M");
+		INSTRUCTION_TO_EXTENSION.put("REMU", "M");
+	}
+	
+	public static String getExtension(String instruction) {
+		return INSTRUCTION_TO_EXTENSION.getOrDefault(instruction, "I");
+	}
+	
+	
+	public static HashMap<String, String> getOpMap(String instruction) {
+		String opCode = InstructionBuilder.INSTRUCTION_TO_OPCODE.get(instruction);
+		if(opCode.equals(OP)) {
+			switch(getExtension(instruction)) {
+			case "M":
+				return Instruction.MOP_FUNCT3_TO_FUNCTION;
+			default:
+				return Instruction.OP_FUNCT3_TO_FUNCTION;
+			}
+		}
+		switch(getExtension(instruction)) {
+		case "M":
+			return Instruction.MOP_32_FUNCT3_TO_FUNCTION;
+		default:
+			return Instruction.OP_32_FUNCT3_TO_FUNCTION;
+		}
+		
+		
+		
+	}
+	
 	//end - start + 1 == 5
 	public static String getRegister(int start, int end, boolean[] bitArray) {
 		int val = 0;
@@ -328,4 +398,10 @@ public class Instruction {
 		return "x" + val;
 	}
 
+	
+	public static String[] M_EXTENSION_INSTRUCTION = {"MUL", "MULH", "MULHSU", "MULHU", "DIV", "DIVU", "REM", "REMU", "MULW", "DIVW", "DIVUW", "REMW", "REMUW"};
+	
+	public static boolean isMType(String instruction) {
+		return Instruction.contains(M_EXTENSION_INSTRUCTION, instruction);
+	}
 }

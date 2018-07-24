@@ -120,5 +120,25 @@ public class DoubleWord extends LittleEndian{
 		boolean[] c = ALU.shiftRight(this.bitArray, shamtI, logical);
 		return new DoubleWord(c);
 	}
+
+	public DoubleWord mul(DoubleWord rS2Val) {
+		boolean[] out = ALU.multiply(this.bitArray, rS2Val.bitArray);
+		return new DoubleWord(out);
+	}
+
+	public DoubleWord upper(DoubleWord rS2Val, boolean multiplicandSigned, boolean multiplierSigned) {
+		boolean[] out = ALU.upperBits(this.bitArray, rS2Val.bitArray, multiplicandSigned, multiplierSigned);
+		return new DoubleWord(out);
+	}
+
+	public DoubleWord div(DoubleWord rS2Val, boolean signed, boolean remainder) {
+		boolean[] out;
+		if(signed) {
+			out = ALU.signedDivision(rS2Val.bitArray, this.bitArray, remainder);
+		} else {
+			out = ALU.unsignedDivision(rS2Val.bitArray, this.bitArray, remainder);
+		}
+		return new DoubleWord(out);
+	}
 	
 }

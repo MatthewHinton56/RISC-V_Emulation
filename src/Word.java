@@ -87,4 +87,19 @@ public class Word extends LittleEndian{
 		return new Word(c);
 	}
 
+	public Word mul(Word rS2Val) {
+		boolean[] out = ALU.multiply(this.bitArray, rS2Val.bitArray);
+		return new Word(out);
+	}
+
+	public Word div(Word rS2Val, boolean signed, boolean remainder) {
+		boolean[] out;
+		if(signed) {
+			out = ALU.signedDivision(rS2Val.bitArray, this.bitArray, remainder);
+		} else {
+			out = ALU.unsignedDivision(rS2Val.bitArray, this.bitArray, remainder);
+		}
+		return new Word(out);
+	}
+
 }
