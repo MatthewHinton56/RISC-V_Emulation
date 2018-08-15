@@ -18,7 +18,6 @@ public abstract class LittleEndian {
 				val+= ((long)Math.pow(2, pos));
 			}
 		}
-		System.out.println(val);
 		return Long.toUnsignedString(val);
 	}
 	public String generateBitString() {

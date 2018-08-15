@@ -91,8 +91,7 @@ public class Instruction {
 		}
 		if(instruction.contains("|"))
 			instruction = (!instructionBitEncoding[30]) ? instruction.substring(0, instruction.indexOf("|")) : instruction.substring(instruction.indexOf("|")+1);
-			String Rd = getRegister(7,11,instructionBitEncoding); 
-			System.out.println(Rd);
+			String Rd = getRegister(7,11,instructionBitEncoding);
 			String Rs1 = getRegister(15,19,instructionBitEncoding);
 			this.Rd = Rd;
 			this.Rs1 = Rs1;
@@ -398,7 +397,6 @@ public class Instruction {
 
 	public static HashMap<String, String> getOpMap(String instruction) {
 		String opCode = InstructionBuilder.INSTRUCTION_TO_OPCODE.get(instruction);
-		System.out.println(instruction+" "+ opCode);
 		if(opCode.equals(OP)) {
 			switch(getExtension(instruction)) {
 			case "M":

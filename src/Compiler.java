@@ -20,7 +20,6 @@ public class Compiler {
 		String output = "";
 		for(Line l: inputLines) {
 			String outputLine = "";
-			System.out.println(l);
 			outputLine += "0x" + l.address +": ";
 			String firstWord = l.splitLine[0];
 			if(firstWord.startsWith("."))
@@ -76,8 +75,6 @@ public class Compiler {
 
 		String val;
 		if(TAG_TO_ADDRESS.containsKey(l.splitLine[3])) {
-			System.out.println(TAG_TO_ADDRESS.get(l.splitLine[3]));
-			System.out.println(l.address);
 			val = (Long.parseLong(TAG_TO_ADDRESS.get(l.splitLine[3]),16) - Long.parseLong(l.address,16)) + "";
 		} else if(l.splitLine[3].contains("0x")) {
 			val = ""+Long.parseLong(l.splitLine[3].substring(2),16);
@@ -99,7 +96,6 @@ public class Compiler {
 		if(instruction.toUpperCase().startsWith("SRAI"))
 			immArray[10] = true;
 		boolean[] instructionArray = InstructionBuilder.generateInstruction(instruction, null, rs1Array, rs2Array, immArray);
-		System.out.println(instructionArray);
 		Word w = new Word(instructionArray);
 		COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
 		return w.generateHex();
@@ -141,7 +137,6 @@ public class Compiler {
 						+ "Error occured on the line: "+ l.line);
 			}
 			boolean[] immArray = ALU.longToBitArray(Long.parseLong(imm), 12);
-			System.out.println(instruction+" "+ALU.calculateValueSigned(immArray));
 			boolean[] instructionArray;
 			switch(InstructionBuilder.INSTRUCTION_TO_OPCODE.get(instruction)) {
 			case Instruction.LOAD:
@@ -248,7 +243,6 @@ public class Compiler {
 			if(instruction.toUpperCase().startsWith("SRAI"))
 				immArray[10] = true;
 			boolean[] instructionArray = InstructionBuilder.generateInstruction(instruction, rDArray, rs1Array, null, immArray);
-			System.out.println(instructionArray);
 			Word w = new Word(instructionArray);
 			COMPILED_CONSTANTS.put(Long.parseLong(l.address, 16), w);
 			return w.generateHex();
@@ -492,5 +486,47 @@ public class Compiler {
 	public static final String EIGHTBYTE = ".8byte";
 	public static final String DWORD = ".dword";
 	public static final String QUAD = ".quad";
-	public static final String[] VALID_ASSEMBLER_DIRECTIVES = {ALIGN, BYTE, TWOBYTE, HALF, SHORT, FOURBYTE, WORD, LONG, EIGHTBYTE, DWORD, QUAD}; 
+	public static final String[] VALID_ASSEMBLER_DIRECTIVES = {ALIGN, BYTE, TWOBYTE, HALF, SHORT, FOURBYTE, WORD, LONG, EIGHTBYTE, DWORD, QUAD};
+
+	public static String compile(String input) {
+		preprocessor(input);
+		COMPILED_INSTRUCTIONS.clear();
+		COMPILED_CONSTANTS.clear();
+		start_address = inputLines.get(0).address;
+		String output = "";
+		for(Line l: inputLines) {
+			String outputLine = "";
+			outputLine += "0x" + l.address +": ";
+			String firstWord = l.splitLine[0];
+			if(firstWord.startsWith("."))
+				outputLine += assemblerDirectiveProcessing(l,firstWord);
+			else if(firstWord.contains(":")) 
+			{
+
+			}
+			else if(!l.line.equals("")){ 
+				String opCode = InstructionBuilder.INSTRUCTION_TO_OPCODE.get(firstWord.toUpperCase());
+				if(opCode == null)
+					throw new IllegalArgumentException("Invalid instruction - " + firstWord.toUpperCase() +" is not a valid instruction.\n"
+							+ "Error occured on the line: "+ l.line);
+				if(Instruction.contains(Instruction.RTYPE, opCode))
+					outputLine += rType(l,firstWord.toUpperCase());
+				else if(opCode.equals(Instruction.OP_32_IMM) || opCode.equals(Instruction.OP_IMM))
+					outputLine += iTypeType1(l,firstWord.toUpperCase());
+				else if(Instruction.contains(Instruction.UTYPE, opCode) || Instruction.contains(Instruction.UJTYPE, opCode))	
+					outputLine += uAndUJType(l,firstWord.toUpperCase());
+				else if(opCode.equals(Instruction.JALR) || opCode.equals(Instruction.LOAD) || opCode.equals(Instruction.STORE))
+					outputLine += memType(l, firstWord.toUpperCase());
+				else if(opCode.equals(Instruction.BRANCH))
+					outputLine += branchType(l, firstWord.toUpperCase());
+				else if(opCode.equals(Instruction.STOP))
+					outputLine += haltType(l, firstWord.toUpperCase());
+			}
+			outputLine+= " "+l.line+"\n";
+			System.out.println(l.originalLine + " ==> " + outputLine);
+			output+=outputLine;
+		}
+		compiled = true;
+		return output;
+	} 
 }

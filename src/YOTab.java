@@ -1,6 +1,8 @@
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.TreeMap;
 
 import javafx.event.ActionEvent;
@@ -287,10 +289,13 @@ public class YOTab extends Tab {
 			break;
 		}
 		row = 2;
+		Set<Long> usedAddresses = new HashSet<Long>();
 		for(long address: Memory.memory.keySet()) {
-			if(address % offset == 0) {
-				LittleEndian value = Memory.load(address, offset);
-				memDisplay.add(new TextField("0x"+Long.toHexString(address)), 0, row);
+			long modifiedAddress = address - address%offset;
+			if(!usedAddresses.contains(modifiedAddress)) {
+				usedAddresses.add(modifiedAddress);	
+				LittleEndian value = Memory.load(modifiedAddress, offset);
+				memDisplay.add(new TextField("0x"+Long.toHexString(modifiedAddress)), 0, row);
 				memDisplay.add(new TextField(displayText(value)), 1, row);
 				row++;
 			}
@@ -299,7 +304,6 @@ public class YOTab extends Tab {
 
 	private int pipeLineStages(int row) {
 		DoubleWord fetchAddress = Processor.pcAddresses[0];
-		System.out.println(fetchAddress);
 		registerDisplay.add(new TextField("Fetch"), 0, row);
 		if(fetchAddress == null || !validAddress(fetchAddress)) {
 			registerDisplay.add(new TextField("BUBBLE"), 1, row);
@@ -353,7 +357,6 @@ public class YOTab extends Tab {
 			String addressString = line.substring(line.indexOf("x")+1, line.indexOf(":"));
 			String restOfLine = line.substring(line.indexOf(":")+1);
 			DoubleWord addressLine = new DoubleWord(Long.parseLong(addressString, 16));
-			System.out.println(addressLine.displayToString());
 			if(addressLine.equals(address) && !restOfLine.contains(":") && !restOfLine.contains(".")) {
 				scan.close();
 				return true;

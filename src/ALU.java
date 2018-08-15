@@ -1,7 +1,3 @@
-import java.util.Arrays;
-import java.util.Scanner;
-
-
 
 public class ALU {
 	//only ALU can set these
@@ -69,17 +65,13 @@ public class ALU {
 			}
 			carry = carryTemp;
 		}
-		System.out.println("ALU output: "+ALU.calculateValueSigned(c));
 		return c;
 	}
 	// a - b
 	public static boolean[] SUB(boolean[] a, boolean[] b) {
-		System.out.println("SUB " +(new DoubleWord(a)).calculateValueSigned()+" "+ (new DoubleWord(b)).calculateValueSigned());
 		b = NEG(b);
-		System.out.println("SUB " +(new DoubleWord(a)).calculateValueSigned()+" "+ (new DoubleWord(b)).calculateValueSigned());
 		boolean[] c = ADD(a,b);
 		CF = !CF;
-		System.out.println("SUB " +(new DoubleWord(c)).calculateValueSigned());
 		return c;
 	}
 
@@ -98,7 +90,6 @@ public class ALU {
 
 
 	public static boolean[] shiftLeft(boolean[] a, int shamt) {
-		System.out.println("here " +shamt);
 		boolean[] c = new boolean[a.length];
 		for(int pos = c.length-1; pos >= 0; pos--) {
 			if(pos + shamt < c.length)
@@ -129,7 +120,6 @@ public class ALU {
 		if(!U && ALU.calculateValueSigned(a) != ALU.T_MIN_Calculator(a) && ALU.calculateValueSigned(b) == ALU.T_MIN_Calculator(b))
 			return false;
 		SUB(a,b);
-		System.out.println("Unsigned: "+ U +" CF: "+ CF);
 		if(U)
 			return CF;
 		return SF ^ OF;
@@ -244,9 +234,7 @@ public class ALU {
 
 	public static boolean[] upperBits(boolean[] multiplicand, boolean[] multiplier, boolean multiplicandSigned, boolean multiplierSigned) {
 		boolean[] multiplicandExtended = signExtension(multiplicand, !multiplicandSigned, multiplicand.length*2 );
-		System.out.println(Arrays.toString(multiplicandExtended));
 		boolean[] multiplierExtended = signExtension(multiplier, !multiplierSigned, multiplier.length*2 );
-		System.out.println(Arrays.toString(multiplierExtended));
 		boolean result[] = multiply(multiplicandExtended,multiplierExtended);
 		boolean[] product = new boolean[multiplicand.length];
 		System.arraycopy(result, result.length/2, product, 0, result.length/2);
@@ -318,42 +306,6 @@ public class ALU {
 				return false;
 		}
 		return true;
-	}
-
-
-
-
-	public static void main(String[] args) {
-		Scanner scan = new Scanner(System.in);
-			System.out.print("valA: ");
-			int valA = scan.nextInt();
-			System.out.print("valB: ");
-			int valB = scan.nextInt();
-			boolean[] a = longToBitArrayUnsigned(valA,8);
-			System.out.println(Arrays.toString(a));
-			boolean[] b = longToBitArrayUnsigned(valB,8);
-			System.out.println(Arrays.toString(b));
-			boolean c = LessThan(a,b, false);
-			/*BYTE byt = new BYTE(c);
-			boolean[] c = ALU.unsignedDivision(a, b, false);
-			boolean[] rem = ALU.unsignedDivision(a, b, true);
-			BYTE byt = new BYTE(c);
-			System.out.println(Arrays.toString(c));
-			System.out.println(byt.generateHex());
-			System.out.println(byt.generateBitString());
-			System.out.println(byt.calculateValueSigned());
-			 byt = new BYTE(rem);
-			System.out.println(Arrays.toString(rem));
-			System.out.println(byt.generateHex());
-			System.out.println(byt.generateBitString());
-			System.out.println(byt.calculateValueSigned());
-			System.out.println("SF:" + SF);
-			System.out.println("OF:" + OF);
-			System.out.println("ZF:" + ZF);*/
-			System.out.println(c);
-			System.out.println(SF ^ OF);
-		
-		scan.close();
 	}
 
 	public static long calculateValueSigned(boolean[] bitArray) {

@@ -123,7 +123,6 @@ public class InstructionBuilder {
 	public static String getFunct3(String function, HashMap<String, String> map) {
 		for(String funct3: map.keySet()) {
 			String instruct = map.get(funct3);
-			System.out.println(function+" "+instruct);
 			if(instruct.contains("|"))
 			{
 				String upper = instruct.substring(instruct.indexOf("|")+1);
@@ -138,7 +137,6 @@ public class InstructionBuilder {
 			} else {
 				
 				if(instruct.equals(function)) {
-					System.out.println(instruct);
 					return funct3;
 				}
 			}
@@ -222,7 +220,6 @@ public class InstructionBuilder {
 	private static boolean[] generateIType(String opCode, String funct3, boolean[] Rd, boolean[] Rs1, boolean[] Rs2,
 			boolean[] imm) {
 		boolean[] opCodeBit = stringToBit(opCode);
-		System.out.println(opCode);
 		boolean[] funct3Bit = stringToBit(funct3);
 		boolean[] instruct = new boolean[32];
 		System.arraycopy(opCodeBit, 0, instruct, 0, 7);

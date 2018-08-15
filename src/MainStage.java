@@ -15,9 +15,6 @@ public class MainStage extends Application implements EventHandler<ActionEvent>{
 	public void start(Stage primaryStage) throws Exception {
 
 		pane = new TabPane();
-		//ystab = new YSTab(pane,"test","",this);
-		//pane.getTabs().add(ystab);
-		//Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
 		EmulatorMenuBar emb = new EmulatorMenuBar(this);
 		BorderPane border = new BorderPane();
 		border.setTop(emb);
@@ -40,7 +37,6 @@ public class MainStage extends Application implements EventHandler<ActionEvent>{
 		ystab.output.setText(ystab.output.getText() + "\n Assembly compiled and ready for emulation in yotab" );
 		
 		Processor.clear();
-		System.out.println(input);
 		pane.getTabs().remove(yotab);
 		yotab = new YOTab(pane,ystab.fileName.substring(0,ystab.fileName.indexOf(".")) +".o", output);
 		yotab.refresh();
