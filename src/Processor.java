@@ -1,4 +1,3 @@
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.TreeMap;
 
@@ -10,7 +9,7 @@ public class Processor {
 	public static final Instruction[] instructionStages = new Instruction[4];
 	public static TreeMap<String, DoubleWord> initialRegisterFile, stepBeforeReg, stepAfterReg, finalRegisterFile;
 	public static HashMap<Long, BYTE> initialMemory, stepBeforeMem, stepAfterMem, finalMemory;
-	public static String status;
+	public static String status = "HLT";
 	public static boolean JALRStall, stopFetching;
 	public static int stopCount;
 	private static boolean JALRTempStall;
@@ -20,83 +19,25 @@ public class Processor {
 
 	//returns true if a instruction went through writeback
 	private static boolean pipeLineIncrement() {
-		//writeBack
-		boolean ret = false;
-		if(instructionStages[WRITE_BACK_INSTRUCTION_POSITION] != null && !instructionStages[WRITE_BACK_INSTRUCTION_POSITION].bubble) {
-			ret = true;
-			writeBack();
-		}
-		if(instructionStages[WRITE_BACK_INSTRUCTION_POSITION] != null) 
-			instructionStages[WRITE_BACK_INSTRUCTION_POSITION].stage = FINISHED;
-		completedInstruction = instructionStages[WRITE_BACK_INSTRUCTION_POSITION];
-		pcAddresses[WRITE_BACK_ADDRESS_POSITION] = null;
-		instructionStages[WRITE_BACK_INSTRUCTION_POSITION] = null;
+		boolean ret = writeBackControl();
+		memoryControl();
+		executeControl();
+		boolean decodeStall = decodeControl();
+		fetchControl(decodeStall);
+		if(stopFetching)
+			pcAddresses[FETCH_ADDRESS_POSITION] = null;
+		if(JALRTempStall)
+			JALRTempStall = false;
+		if(stopFetching && stopCount == 0)
+			status = "HLT";
+		stopCount--;
+		setPC();
+		return ret;
+	}
 
-		//Memory
-		if(instructionStages[MEMORY_INSTRUCTION_POSITION] != null && !instructionStages[MEMORY_INSTRUCTION_POSITION].bubble) {
-			if(instructionStages[MEMORY_INSTRUCTION_POSITION].memory)
-				instructionStages[MEMORY_INSTRUCTION_POSITION].memLoaded = true;
-			try {
-				memory();
-			} catch(MemoryException e) {
-				status = "HLT";
-				throw new ProcessorException(e.getMessage(), instructionStages[MEMORY_INSTRUCTION_POSITION]);
-			}
-		}
-		pcAddresses[WRITE_BACK_ADDRESS_POSITION] = pcAddresses[MEMORY_ADDRESS_POSITION];
-		pcAddresses[MEMORY_ADDRESS_POSITION] = null;
-		instructionStages[WRITE_BACK_INSTRUCTION_POSITION] = instructionStages[MEMORY_INSTRUCTION_POSITION];
-		instructionStages[MEMORY_INSTRUCTION_POSITION] = null;
-		if(instructionStages[WRITE_BACK_INSTRUCTION_POSITION] != null)  
-			instructionStages[WRITE_BACK_INSTRUCTION_POSITION].stage = WRITE_BACK;
-
-		//Execute
-		if(instructionStages[EXECUTE_INSTRUCTION_POSITION] != null && !instructionStages[EXECUTE_INSTRUCTION_POSITION].bubble) {
-			instructionStages[EXECUTE_INSTRUCTION_POSITION].exeFinished = true;
-			DoubleWord newPredictedValP = null;
-			try {
-				newPredictedValP = execute();
-			} catch(ArithmeticException e) {
-				status = "HLT";
-				throw new ProcessorException(e.getMessage(), instructionStages[EXECUTE_INSTRUCTION_POSITION]);
-			}
-			//misprediction
-			if(!instructionStages[EXECUTE_INSTRUCTION_POSITION].instruction.equals("JALR") && !pcAddresses[DECODE_ADDRESS_POSITION].equals(newPredictedValP)) {
-				System.out.println("MisPredict "+newPredictedValP);
-				pcAddresses[DECODE_ADDRESS_POSITION] = null;
-				pcAddresses[FETCH_ADDRESS_POSITION] = newPredictedValP;
-				instructionStages[DECODE_INSTRUCTION_POSITION] = new Instruction(DECODE);
-				stopFetching = false;
-				stopCount = -1;
-			}
-		}
-		pcAddresses[MEMORY_ADDRESS_POSITION] = pcAddresses[EXECUTE_ADDRESS_POSITION];
-		pcAddresses[EXECUTE_ADDRESS_POSITION] = null;
-		instructionStages[MEMORY_INSTRUCTION_POSITION] = instructionStages[EXECUTE_INSTRUCTION_POSITION];
-		instructionStages[EXECUTE_INSTRUCTION_POSITION] = null;
-		if(instructionStages[MEMORY_INSTRUCTION_POSITION] != null) 
-			instructionStages[MEMORY_INSTRUCTION_POSITION].stage = MEMORY;
-
-		boolean decodeStall = false;
-		if(instructionStages[DECODE_INSTRUCTION_POSITION] != null && !instructionStages[DECODE_INSTRUCTION_POSITION].bubble) {
-			decodeStall = decode();
-		}
-		if(!decodeStall) {
-			pcAddresses[EXECUTE_ADDRESS_POSITION] = pcAddresses[DECODE_ADDRESS_POSITION];
-			pcAddresses[DECODE_ADDRESS_POSITION] = null;
-			instructionStages[EXECUTE_INSTRUCTION_POSITION] = instructionStages[DECODE_INSTRUCTION_POSITION];
-			instructionStages[DECODE_INSTRUCTION_POSITION] = null;
-			if(instructionStages[EXECUTE_INSTRUCTION_POSITION] != null) 
-				instructionStages[EXECUTE_INSTRUCTION_POSITION].stage = EXECUTE;
-		} else {
-			//puts a bubble
-			pcAddresses[EXECUTE_ADDRESS_POSITION] = null;
-			instructionStages[EXECUTE_INSTRUCTION_POSITION] = new Instruction(EXECUTE);
-			System.out.println("I am here" + instructionStages[DECODE_INSTRUCTION_POSITION]);
-		}
+	private static void fetchControl(boolean decodeStall) {
 		if((JALRStall || JALRTempStall) && !decodeStall) {
 			//places bubble in the fetch stage
-			System.out.println("here jalr");
 			instructionStages[DECODE_INSTRUCTION_POSITION] = new Instruction(DECODE);
 		}
 		if(stopFetching) 
@@ -115,18 +56,88 @@ public class Processor {
 			if(instructionStages[DECODE_INSTRUCTION_POSITION] != null)
 				pcAddresses[FETCH_ADDRESS_POSITION] = instructionStages[DECODE_INSTRUCTION_POSITION].valP;
 		}
-		if(stopFetching)
-			pcAddresses[FETCH_ADDRESS_POSITION] = null;
-		if(JALRTempStall)
-			JALRTempStall = false;
-		if(stopFetching && stopCount == 0)
-			status = "HLT";
-		stopCount--;
-		System.out.println(Arrays.toString(instructionStages));
-		System.out.println(Arrays.toString(pcAddresses));
-		setPC();
+	}
+
+	private static boolean decodeControl() {
+		boolean decodeStall = false;
+		if(instructionStages[DECODE_INSTRUCTION_POSITION] != null && !instructionStages[DECODE_INSTRUCTION_POSITION].bubble) {
+			decodeStall = decode();
+		}
+		if(!decodeStall) {
+			pcAddresses[EXECUTE_ADDRESS_POSITION] = pcAddresses[DECODE_ADDRESS_POSITION];
+			pcAddresses[DECODE_ADDRESS_POSITION] = null;
+			instructionStages[EXECUTE_INSTRUCTION_POSITION] = instructionStages[DECODE_INSTRUCTION_POSITION];
+			instructionStages[DECODE_INSTRUCTION_POSITION] = null;
+			if(instructionStages[EXECUTE_INSTRUCTION_POSITION] != null) 
+				instructionStages[EXECUTE_INSTRUCTION_POSITION].stage = EXECUTE;
+		} else {
+			//puts a bubble
+			pcAddresses[EXECUTE_ADDRESS_POSITION] = null;
+			instructionStages[EXECUTE_INSTRUCTION_POSITION] = new Instruction(EXECUTE);
+		}
+		return decodeStall;
+	}
+
+	private static void executeControl() {
+		if(instructionStages[EXECUTE_INSTRUCTION_POSITION] != null && !instructionStages[EXECUTE_INSTRUCTION_POSITION].bubble) {
+			instructionStages[EXECUTE_INSTRUCTION_POSITION].exeFinished = true;
+			DoubleWord newPredictedValP = null;
+			try {
+				newPredictedValP = execute();
+			} catch(ArithmeticException e) {
+				status = "HLT";
+				throw new ProcessorException(e.getMessage(), instructionStages[EXECUTE_INSTRUCTION_POSITION]);
+			}
+			//misprediction
+			if(!instructionStages[EXECUTE_INSTRUCTION_POSITION].instruction.equals("JALR") && !pcAddresses[DECODE_ADDRESS_POSITION].equals(newPredictedValP)) {
+				pcAddresses[DECODE_ADDRESS_POSITION] = null;
+				pcAddresses[FETCH_ADDRESS_POSITION] = newPredictedValP;
+				instructionStages[DECODE_INSTRUCTION_POSITION] = new Instruction(DECODE);
+				stopFetching = false;
+				stopCount = -1;
+			}
+		}
+		pcAddresses[MEMORY_ADDRESS_POSITION] = pcAddresses[EXECUTE_ADDRESS_POSITION];
+		pcAddresses[EXECUTE_ADDRESS_POSITION] = null;
+		instructionStages[MEMORY_INSTRUCTION_POSITION] = instructionStages[EXECUTE_INSTRUCTION_POSITION];
+		instructionStages[EXECUTE_INSTRUCTION_POSITION] = null;
+		if(instructionStages[MEMORY_INSTRUCTION_POSITION] != null) 
+			instructionStages[MEMORY_INSTRUCTION_POSITION].stage = MEMORY;
+	}
+
+	private static void memoryControl() {
+		if(instructionStages[MEMORY_INSTRUCTION_POSITION] != null && !instructionStages[MEMORY_INSTRUCTION_POSITION].bubble) {
+			if(instructionStages[MEMORY_INSTRUCTION_POSITION].memory)
+				instructionStages[MEMORY_INSTRUCTION_POSITION].memLoaded = true;
+			try {
+				memory();
+			} catch(MemoryException e) {
+				status = "HLT";
+				throw new ProcessorException(e.getMessage(), instructionStages[MEMORY_INSTRUCTION_POSITION]);
+			}
+		}
+		pcAddresses[WRITE_BACK_ADDRESS_POSITION] = pcAddresses[MEMORY_ADDRESS_POSITION];
+		pcAddresses[MEMORY_ADDRESS_POSITION] = null;
+		instructionStages[WRITE_BACK_INSTRUCTION_POSITION] = instructionStages[MEMORY_INSTRUCTION_POSITION];
+		instructionStages[MEMORY_INSTRUCTION_POSITION] = null;
+		if(instructionStages[WRITE_BACK_INSTRUCTION_POSITION] != null)  
+			instructionStages[WRITE_BACK_INSTRUCTION_POSITION].stage = WRITE_BACK;
+	}
+	
+	private static boolean writeBackControl() {
+		boolean ret = false;
+		if(instructionStages[WRITE_BACK_INSTRUCTION_POSITION] != null && !instructionStages[WRITE_BACK_INSTRUCTION_POSITION].bubble) {
+			ret = true;
+			writeBack();
+		}
+		if(instructionStages[WRITE_BACK_INSTRUCTION_POSITION] != null) 
+			instructionStages[WRITE_BACK_INSTRUCTION_POSITION].stage = FINISHED;
+		completedInstruction = instructionStages[WRITE_BACK_INSTRUCTION_POSITION];
+		pcAddresses[WRITE_BACK_ADDRESS_POSITION] = null;
+		instructionStages[WRITE_BACK_INSTRUCTION_POSITION] = null;
 		return ret;
 	}
+	
 
 	private static void setPC() {
 		for(int i = WRITE_BACK_ADDRESS_POSITION; i >= 0; i--)
@@ -150,7 +161,6 @@ public class Processor {
 		currentInstruction.valP = predictPC(currentInstruction);
 		if(currentInstruction.instruction.equals("JALR")) {
 			JALRStall = true;
-			System.out.println("jalr hereeee");
 		}
 		return currentInstruction;
 	}
@@ -161,7 +171,6 @@ public class Processor {
 			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 20);
 			constant = ALU.signExtension(constant, false, 64);
 			DoubleWord c = new DoubleWord(constant);
-			System.out.println("JAL "+c.calculateValueSigned());
 			return pcAddresses[FETCH_ADDRESS_POSITION].add(c);
 		}
 		return pcAddresses[0].addFour();
@@ -172,7 +181,6 @@ public class Processor {
 		Instruction currentInstruction = Processor.instructionStages[0];
 		DoubleWord RS1ValTemp = forward(currentInstruction.Rs1);
 		DoubleWord RS2ValTemp = forward(currentInstruction.Rs2);
-		System.out.println(currentInstruction.instruction+" "+currentInstruction.Rs1 + " "+ currentInstruction.Rs2);
 		if(RS1ValTemp == null || RS2ValTemp == null)
 			return true;
 		currentInstruction.RS1Val = RS1ValTemp;
@@ -276,7 +284,6 @@ public class Processor {
 				System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
 				constant = ALU.signExtension(constant, false, 64);
 				c = new DoubleWord(constant);
-				System.out.println("RS1Val: " + currentInstruction.RS1Val + "RS2Val: "+ currentInstruction.RS2Val);
 				currentInstruction.valP = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
 				break;	
 			case "BGE":
@@ -342,12 +349,10 @@ public class Processor {
 			case "SUBW":
 				w = currentInstruction.RS1Val.getWord(0).subtract(currentInstruction.RS2Val.getWord(0));
 				currentInstruction.EVal = new DoubleWord(w,true);
-				break;	
-
+				break;
 			case "SLL":
 				valE = currentInstruction.RS1Val.shiftLeft(currentInstruction.RS2Val);
 				currentInstruction.EVal = valE; 
-				System.out.println(valE);
 				break;
 			case "SRL":
 				valE = currentInstruction.RS1Val.shiftRight(currentInstruction.RS2Val,true);
@@ -369,11 +374,9 @@ public class Processor {
 				w = currentInstruction.RS1Val.getWord(0).shiftRight(currentInstruction.RS2Val.getWord(0),false);
 				currentInstruction.EVal = new DoubleWord(w,true); 
 				break;
-
 			case "SLLI":
 				constant = new boolean[6];
 				System.arraycopy(currentInstruction.immediate, 0, constant, 0, 6);
-				System.out.println(ALU.bitString(currentInstruction.immediate));
 				valE = currentInstruction.RS1Val.shiftLeft(constant);
 				currentInstruction.EVal = valE; 
 				break;
@@ -431,7 +434,6 @@ public class Processor {
 			JALRTempStall = true;
 			stopFetching = false;
 		}
-		System.out.println(currentInstruction.instruction+" "+currentInstruction.EVal);
 		return currentInstruction.valP;
 	}
 
@@ -539,12 +541,10 @@ public class Processor {
 			break;		
 
 		}
-		//if(currentInstruction.memory && currentInstruction)
 	}
 
 	public static void writeBack() {
 		Instruction currentInstruction = Processor.instructionStages[3];
-		System.out.println("Rd"+currentInstruction.Rd);
 		switch(currentInstruction.instruction) {
 		case "LD":
 		case "LW":
@@ -560,16 +560,7 @@ public class Processor {
 			break;	
 		}
 	}
-
-	//Bare Bones
-	public static void setUp(DoubleWord start) {
-		registerFile.set("pc", start);
-	}
-
-
-
-
-
+	
 	public static void initialize() {
 		if(Compiler.compiled) {
 			Memory.memory.clear();
@@ -577,7 +568,6 @@ public class Processor {
 			clearArrays();
 			pcAddresses[0] = new DoubleWord(Long.parseLong(Compiler.start_address,16));
 			status = "AOK";
-			System.out.println(registerFile.get("pc").calculateValueSigned());
 			for(long l: Compiler.COMPILED_CONSTANTS.keySet()) {
 				try {
 					LittleEndian le = Compiler.COMPILED_CONSTANTS.get(l);
@@ -589,7 +579,6 @@ public class Processor {
 						Memory.storeWord(l, (Word)le);
 					if(le instanceof DoubleWord)
 						Memory.storeDoubleWord(l, (DoubleWord)le);
-					System.out.println(Memory.loadWord(l) + " "+ l);
 				} catch(MemoryException e) {
 					status = "HLT";
 					exception = e.getMessage();
@@ -604,8 +593,6 @@ public class Processor {
 		} else {
 			status = "HLT";
 		}
-		System.out.println(pcAddresses[0]);
-		System.out.println("finished");
 		Processor.initialMemory = Memory.createImage();
 		Processor.initialRegisterFile = Processor.registerFile.createImage();
 		finalMemory = stepBeforeMem = stepAfterMem = null;
@@ -705,6 +692,5 @@ public class Processor {
 	public static final int EXECUTE_ADDRESS_POSITION = 2;
 	public static final int DECODE_ADDRESS_POSITION = 1;
 	public static final int FETCH_ADDRESS_POSITION = 0;
-
 
 }
