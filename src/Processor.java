@@ -16,6 +16,7 @@ public class Processor {
 	private static boolean JALRTempStall;
 	public static boolean validStop;
 	public static Instruction completedInstruction;
+	public static boolean initialized;
 
 	//returns true if a instruction went through writeback
 	private static boolean pipeLineIncrement() {
@@ -35,7 +36,12 @@ public class Processor {
 		if(instructionStages[MEMORY_INSTRUCTION_POSITION] != null && !instructionStages[MEMORY_INSTRUCTION_POSITION].bubble) {
 			if(instructionStages[MEMORY_INSTRUCTION_POSITION].memory)
 				instructionStages[MEMORY_INSTRUCTION_POSITION].memLoaded = true;
-			memory();
+			try {
+				memory();
+			} catch(MemoryException e) {
+				status = "HLT";
+				throw new ProcessorException(e.getMessage(), instructionStages[MEMORY_INSTRUCTION_POSITION]);
+			}
 		}
 		pcAddresses[WRITE_BACK_ADDRESS_POSITION] = pcAddresses[MEMORY_ADDRESS_POSITION];
 		pcAddresses[MEMORY_ADDRESS_POSITION] = null;
@@ -47,7 +53,13 @@ public class Processor {
 		//Execute
 		if(instructionStages[EXECUTE_INSTRUCTION_POSITION] != null && !instructionStages[EXECUTE_INSTRUCTION_POSITION].bubble) {
 			instructionStages[EXECUTE_INSTRUCTION_POSITION].exeFinished = true;
-			DoubleWord newPredictedValP = execute();
+			DoubleWord newPredictedValP = null;
+			try {
+				newPredictedValP = execute();
+			} catch(ArithmeticException e) {
+				status = "HLT";
+				throw new ProcessorException(e.getMessage(), instructionStages[EXECUTE_INSTRUCTION_POSITION]);
+			}
 			//misprediction
 			if(!instructionStages[EXECUTE_INSTRUCTION_POSITION].instruction.equals("JALR") && !pcAddresses[DECODE_ADDRESS_POSITION].equals(newPredictedValP)) {
 				System.out.println("MisPredict "+newPredictedValP);
@@ -89,9 +101,14 @@ public class Processor {
 		}
 		if(stopFetching) 
 			instructionStages[DECODE_INSTRUCTION_POSITION] = null;
-		
+
 		if(!decodeStall && !stopFetching && !JALRStall && !JALRTempStall) {
-			instructionStages[DECODE_INSTRUCTION_POSITION] = fetch();
+			try {
+				instructionStages[DECODE_INSTRUCTION_POSITION] = fetch();
+			} catch(MemoryException e) {
+				status = "HLT";
+				throw new ProcessorException(e.getMessage(), "The instruction the processor attempted to access generated the following error:");
+			}
 			if(instructionStages[DECODE_INSTRUCTION_POSITION] != null)
 				instructionStages[DECODE_INSTRUCTION_POSITION].stage = DECODE;
 			pcAddresses[DECODE_ADDRESS_POSITION] = pcAddresses[FETCH_ADDRESS_POSITION];
@@ -122,11 +139,6 @@ public class Processor {
 	//returns predicted PC
 	public static Instruction fetch() {
 		Word nextInstruction = Memory.loadWord(pcAddresses[0].calculateValueSigned());
-		if(nextInstruction == null) {
-			stopCount = 0;
-			return null;
-		}
-			
 		boolean[] instructionArray = nextInstruction.bitArray;
 		Instruction currentInstruction = new Instruction(instructionArray,pcAddresses[0]);
 		if(currentInstruction.stop) { 
@@ -191,225 +203,225 @@ public class Processor {
 		if(Instruction.isMType(currentInstruction.instruction))
 			executeMExtension(currentInstruction);
 		else {
-		DoubleWord valE = null;
-		boolean[] constant = null;
-		DoubleWord c = null;
-		Word w = null;
-		switch(currentInstruction.instruction) {
-		case "ADD": 
-			valE = currentInstruction.RS1Val.add(currentInstruction.RS2Val);
-			currentInstruction.EVal = valE; 
-			break;
-		case "SUB":
-			valE = currentInstruction.RS1Val.subtract(currentInstruction.RS2Val);
-			currentInstruction.EVal = valE; 
-			currentInstruction.EVal = valE; 
-			break;
-		case "AND":
-			valE = currentInstruction.RS1Val.and(currentInstruction.RS2Val);
-			currentInstruction.EVal = valE; 
-			break;
-		case "OR":
-			valE = currentInstruction.RS1Val.or(currentInstruction.RS2Val);
-			currentInstruction.EVal = valE; 
-			break;
-		case "XOR":
-			valE = currentInstruction.RS1Val.xor(currentInstruction.RS2Val);
-			currentInstruction.EVal = valE; 
-			break;	
-		case "XORI":
-			constant = new boolean[13];
-			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
-			constant = ALU.signExtension(constant, false, 64);
-			valE = new DoubleWord(ALU.XOR(currentInstruction.RS1Val.bitArray,constant));
-			currentInstruction.EVal = valE;
-			break;
-		case "ORI":
-			constant = new boolean[13];
-			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
-			constant = ALU.signExtension(constant, false, 64);
-			valE = new DoubleWord(ALU.OR(currentInstruction.RS1Val.bitArray,constant));
-			currentInstruction.EVal = valE; 
-			break;
-		case "ANDI":
-			constant = new boolean[13];
-			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
-			constant = ALU.signExtension(constant, false, 64);
-			valE = new DoubleWord(ALU.AND(currentInstruction.RS1Val.bitArray,constant));
-			currentInstruction.EVal = valE; 
-			break;
-		case "BEQ":
-			constant = new boolean[13];
-			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
-			constant = ALU.signExtension(constant, false, 64);
-			c = new DoubleWord(constant);
-			currentInstruction.valP = (currentInstruction.RS1Val.equals(currentInstruction.RS2Val)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
-			break;
-		case "BNE":
-			constant = new boolean[13];
-			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
-			constant = ALU.signExtension(constant, false, 64);
-			c = new DoubleWord(constant);
-			currentInstruction.valP = (!currentInstruction.RS1Val.equals(currentInstruction.RS2Val)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
-			break;	
-		case "BLT":
-			constant = new boolean[13];
-			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
-			constant = ALU.signExtension(constant, false, 64);
-			c = new DoubleWord(constant);
-			currentInstruction.valP = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,false)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
-			break;
-		case "BLTU":
-			constant = new boolean[13];
-			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
-			constant = ALU.signExtension(constant, false, 64);
-			c = new DoubleWord(constant);
-			System.out.println("RS1Val: " + currentInstruction.RS1Val + "RS2Val: "+ currentInstruction.RS2Val);
-			currentInstruction.valP = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
-			break;	
-		case "BGE":
-			constant = new boolean[13];
-			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
-			constant = ALU.signExtension(constant, false, 64);
-			c = new DoubleWord(constant);
-			currentInstruction.valP = (!currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,false)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
-			break;
-		case "BGEU":
-			constant = new boolean[13];
-			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
-			constant = ALU.signExtension(constant, false, 64);
-			c = new DoubleWord(constant);
-			currentInstruction.valP = (!currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
-			break;	
-		case "JAL":
-			constant = new boolean[21];
-			System.arraycopy(currentInstruction.immediate, 1, constant, 1, 20);
-			constant = ALU.signExtension(constant, false, 64);
-			c = new DoubleWord(constant);
-			currentInstruction.valP = pcAddresses[EXECUTE_ADDRESS_POSITION].add(c);
-			currentInstruction.EVal = pcAddresses[EXECUTE_ADDRESS_POSITION].addFour();
-			break;
-		case "LUI":
-			constant = new boolean[32];
-			System.arraycopy(currentInstruction.immediate, 12, constant, 12, 20);
-			constant = ALU.signExtension(constant, false, 64);
-			c = new DoubleWord(constant);
-			currentInstruction.EVal = c;
-			break;
-		case "AUIPC":
-			constant = new boolean[32];
-			System.arraycopy(currentInstruction.immediate, 12, constant, 12, 20);
-			constant = ALU.signExtension(constant, false, 64);
-			c = new DoubleWord(constant);
-			currentInstruction.EVal = pcAddresses[EXECUTE_ADDRESS_POSITION].add(c);
-			break;
-		case "SLT":
-			currentInstruction.EVal = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,false)) ? new DoubleWord(1) : new DoubleWord();
-			break;
-		case "SLTU":
-			currentInstruction.EVal = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? new DoubleWord(1) : new DoubleWord();
-			break;
-		case "SLTI":
-			constant = new boolean[12];
-			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
-			constant = ALU.signExtension(constant, false, 64);
-			c = new DoubleWord(constant);
-			currentInstruction.EVal = (currentInstruction.RS1Val.lessThan(c,false)) ? new DoubleWord(1) : new DoubleWord();
-			break;
-		case "SLTIU":
-			constant = new boolean[12];
-			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
-			constant = ALU.signExtension(constant, false, 64);
-			c = new DoubleWord(constant);
-			currentInstruction.EVal = (currentInstruction.RS1Val.lessThan(c,true)) ? new DoubleWord(1) : new DoubleWord();
-			break;
-		case "ADDW":
-			w = currentInstruction.RS1Val.getWord(0).add(currentInstruction.RS2Val.getWord(0));
-			currentInstruction.EVal = new DoubleWord(w,true);
-			break;
-		case "SUBW":
-			w = currentInstruction.RS1Val.getWord(0).subtract(currentInstruction.RS2Val.getWord(0));
-			currentInstruction.EVal = new DoubleWord(w,true);
-			break;	
+			DoubleWord valE = null;
+			boolean[] constant = null;
+			DoubleWord c = null;
+			Word w = null;
+			switch(currentInstruction.instruction) {
+			case "ADD": 
+				valE = currentInstruction.RS1Val.add(currentInstruction.RS2Val);
+				currentInstruction.EVal = valE; 
+				break;
+			case "SUB":
+				valE = currentInstruction.RS1Val.subtract(currentInstruction.RS2Val);
+				currentInstruction.EVal = valE; 
+				currentInstruction.EVal = valE; 
+				break;
+			case "AND":
+				valE = currentInstruction.RS1Val.and(currentInstruction.RS2Val);
+				currentInstruction.EVal = valE; 
+				break;
+			case "OR":
+				valE = currentInstruction.RS1Val.or(currentInstruction.RS2Val);
+				currentInstruction.EVal = valE; 
+				break;
+			case "XOR":
+				valE = currentInstruction.RS1Val.xor(currentInstruction.RS2Val);
+				currentInstruction.EVal = valE; 
+				break;	
+			case "XORI":
+				constant = new boolean[13];
+				System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
+				constant = ALU.signExtension(constant, false, 64);
+				valE = new DoubleWord(ALU.XOR(currentInstruction.RS1Val.bitArray,constant));
+				currentInstruction.EVal = valE;
+				break;
+			case "ORI":
+				constant = new boolean[13];
+				System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
+				constant = ALU.signExtension(constant, false, 64);
+				valE = new DoubleWord(ALU.OR(currentInstruction.RS1Val.bitArray,constant));
+				currentInstruction.EVal = valE; 
+				break;
+			case "ANDI":
+				constant = new boolean[13];
+				System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
+				constant = ALU.signExtension(constant, false, 64);
+				valE = new DoubleWord(ALU.AND(currentInstruction.RS1Val.bitArray,constant));
+				currentInstruction.EVal = valE; 
+				break;
+			case "BEQ":
+				constant = new boolean[13];
+				System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
+				constant = ALU.signExtension(constant, false, 64);
+				c = new DoubleWord(constant);
+				currentInstruction.valP = (currentInstruction.RS1Val.equals(currentInstruction.RS2Val)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
+				break;
+			case "BNE":
+				constant = new boolean[13];
+				System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
+				constant = ALU.signExtension(constant, false, 64);
+				c = new DoubleWord(constant);
+				currentInstruction.valP = (!currentInstruction.RS1Val.equals(currentInstruction.RS2Val)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
+				break;	
+			case "BLT":
+				constant = new boolean[13];
+				System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
+				constant = ALU.signExtension(constant, false, 64);
+				c = new DoubleWord(constant);
+				currentInstruction.valP = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,false)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
+				break;
+			case "BLTU":
+				constant = new boolean[13];
+				System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
+				constant = ALU.signExtension(constant, false, 64);
+				c = new DoubleWord(constant);
+				System.out.println("RS1Val: " + currentInstruction.RS1Val + "RS2Val: "+ currentInstruction.RS2Val);
+				currentInstruction.valP = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
+				break;	
+			case "BGE":
+				constant = new boolean[13];
+				System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
+				constant = ALU.signExtension(constant, false, 64);
+				c = new DoubleWord(constant);
+				currentInstruction.valP = (!currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,false)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
+				break;
+			case "BGEU":
+				constant = new boolean[13];
+				System.arraycopy(currentInstruction.immediate, 1, constant, 1, 12);
+				constant = ALU.signExtension(constant, false, 64);
+				c = new DoubleWord(constant);
+				currentInstruction.valP = (!currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? pcAddresses[EXECUTE_ADDRESS_POSITION].add(c) : currentInstruction.valP;
+				break;	
+			case "JAL":
+				constant = new boolean[21];
+				System.arraycopy(currentInstruction.immediate, 1, constant, 1, 20);
+				constant = ALU.signExtension(constant, false, 64);
+				c = new DoubleWord(constant);
+				currentInstruction.valP = pcAddresses[EXECUTE_ADDRESS_POSITION].add(c);
+				currentInstruction.EVal = pcAddresses[EXECUTE_ADDRESS_POSITION].addFour();
+				break;
+			case "LUI":
+				constant = new boolean[32];
+				System.arraycopy(currentInstruction.immediate, 12, constant, 12, 20);
+				constant = ALU.signExtension(constant, false, 64);
+				c = new DoubleWord(constant);
+				currentInstruction.EVal = c;
+				break;
+			case "AUIPC":
+				constant = new boolean[32];
+				System.arraycopy(currentInstruction.immediate, 12, constant, 12, 20);
+				constant = ALU.signExtension(constant, false, 64);
+				c = new DoubleWord(constant);
+				currentInstruction.EVal = pcAddresses[EXECUTE_ADDRESS_POSITION].add(c);
+				break;
+			case "SLT":
+				currentInstruction.EVal = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,false)) ? new DoubleWord(1) : new DoubleWord();
+				break;
+			case "SLTU":
+				currentInstruction.EVal = (currentInstruction.RS1Val.lessThan(currentInstruction.RS2Val,true)) ? new DoubleWord(1) : new DoubleWord();
+				break;
+			case "SLTI":
+				constant = new boolean[12];
+				System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
+				constant = ALU.signExtension(constant, false, 64);
+				c = new DoubleWord(constant);
+				currentInstruction.EVal = (currentInstruction.RS1Val.lessThan(c,false)) ? new DoubleWord(1) : new DoubleWord();
+				break;
+			case "SLTIU":
+				constant = new boolean[12];
+				System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
+				constant = ALU.signExtension(constant, false, 64);
+				c = new DoubleWord(constant);
+				currentInstruction.EVal = (currentInstruction.RS1Val.lessThan(c,true)) ? new DoubleWord(1) : new DoubleWord();
+				break;
+			case "ADDW":
+				w = currentInstruction.RS1Val.getWord(0).add(currentInstruction.RS2Val.getWord(0));
+				currentInstruction.EVal = new DoubleWord(w,true);
+				break;
+			case "SUBW":
+				w = currentInstruction.RS1Val.getWord(0).subtract(currentInstruction.RS2Val.getWord(0));
+				currentInstruction.EVal = new DoubleWord(w,true);
+				break;	
 
-		case "SLL":
-			valE = currentInstruction.RS1Val.shiftLeft(currentInstruction.RS2Val);
-			currentInstruction.EVal = valE; 
-			System.out.println(valE);
-			break;
-		case "SRL":
-			valE = currentInstruction.RS1Val.shiftRight(currentInstruction.RS2Val,true);
-			currentInstruction.EVal = valE; 
-			break;
-		case "SRA":	
-			valE = currentInstruction.RS1Val.shiftRight(currentInstruction.RS2Val,false);
-			currentInstruction.EVal = valE; 
-			break;
-		case "SLLW":
-			w = currentInstruction.RS1Val.getWord(0).shiftLeft(currentInstruction.RS2Val.getWord(0));
-			currentInstruction.EVal = new DoubleWord(w,true);
-			break;
-		case "SRLW":
-			w = currentInstruction.RS1Val.getWord(0).shiftRight(currentInstruction.RS2Val.getWord(0),true);
-			currentInstruction.EVal = new DoubleWord(w,true); 
-			break;
-		case "SRAW":		
-			w = currentInstruction.RS1Val.getWord(0).shiftRight(currentInstruction.RS2Val.getWord(0),false);
-			currentInstruction.EVal = new DoubleWord(w,true); 
-			break;
+			case "SLL":
+				valE = currentInstruction.RS1Val.shiftLeft(currentInstruction.RS2Val);
+				currentInstruction.EVal = valE; 
+				System.out.println(valE);
+				break;
+			case "SRL":
+				valE = currentInstruction.RS1Val.shiftRight(currentInstruction.RS2Val,true);
+				currentInstruction.EVal = valE; 
+				break;
+			case "SRA":	
+				valE = currentInstruction.RS1Val.shiftRight(currentInstruction.RS2Val,false);
+				currentInstruction.EVal = valE; 
+				break;
+			case "SLLW":
+				w = currentInstruction.RS1Val.getWord(0).shiftLeft(currentInstruction.RS2Val.getWord(0));
+				currentInstruction.EVal = new DoubleWord(w,true);
+				break;
+			case "SRLW":
+				w = currentInstruction.RS1Val.getWord(0).shiftRight(currentInstruction.RS2Val.getWord(0),true);
+				currentInstruction.EVal = new DoubleWord(w,true); 
+				break;
+			case "SRAW":		
+				w = currentInstruction.RS1Val.getWord(0).shiftRight(currentInstruction.RS2Val.getWord(0),false);
+				currentInstruction.EVal = new DoubleWord(w,true); 
+				break;
 
-		case "SLLI":
-			constant = new boolean[6];
-			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 6);
-			System.out.println(ALU.bitString(currentInstruction.immediate));
-			valE = currentInstruction.RS1Val.shiftLeft(constant);
-			currentInstruction.EVal = valE; 
-			break;
-		case "SRLI":
-			constant = new boolean[6];
-			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 6);
-			valE = currentInstruction.RS1Val.shiftRight(constant,true);
-			currentInstruction.EVal = valE; 
-			break;
-		case "SRAI":
-			constant = new boolean[6];
-			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 6);
-			valE = currentInstruction.RS1Val.shiftRight(constant,false);
-			currentInstruction.EVal = valE; 
-			break;
-		case "SLLIW":
-			constant = new boolean[5];
-			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 5);
-			w = currentInstruction.RS1Val.getWord(0).shiftLeft(constant);
-			currentInstruction.EVal = new DoubleWord(w,true);
-			break;
-		case "SRLIW":
-			constant = new boolean[5];
-			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 5);
-			w = currentInstruction.RS1Val.getWord(0).shiftRight(constant,true);
-			currentInstruction.EVal = new DoubleWord(w,true); 
-			break;
-		case "SRAIW":
-			constant = new boolean[5];
-			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 5);
-			w = currentInstruction.RS1Val.getWord(0).shiftRight(constant,false);
-			currentInstruction.EVal = new DoubleWord(w,true); 
-			break;	
-		case "ADDIW":	
-			constant = new boolean[12];
-			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
-			constant = ALU.signExtension(constant, false, 32);
-			w = new Word(constant);
-			valE = new DoubleWord(currentInstruction.RS1Val.getWord(0).add(w),true);
-			break;
-		default:
-			constant = new boolean[12];
-			System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
-			constant = ALU.signExtension(constant, false, 64);
-			valE = new DoubleWord(ALU.IADD(currentInstruction.RS1Val.bitArray,constant));
-			currentInstruction.EVal = valE; 
-			break;			
-		}
+			case "SLLI":
+				constant = new boolean[6];
+				System.arraycopy(currentInstruction.immediate, 0, constant, 0, 6);
+				System.out.println(ALU.bitString(currentInstruction.immediate));
+				valE = currentInstruction.RS1Val.shiftLeft(constant);
+				currentInstruction.EVal = valE; 
+				break;
+			case "SRLI":
+				constant = new boolean[6];
+				System.arraycopy(currentInstruction.immediate, 0, constant, 0, 6);
+				valE = currentInstruction.RS1Val.shiftRight(constant,true);
+				currentInstruction.EVal = valE; 
+				break;
+			case "SRAI":
+				constant = new boolean[6];
+				System.arraycopy(currentInstruction.immediate, 0, constant, 0, 6);
+				valE = currentInstruction.RS1Val.shiftRight(constant,false);
+				currentInstruction.EVal = valE; 
+				break;
+			case "SLLIW":
+				constant = new boolean[5];
+				System.arraycopy(currentInstruction.immediate, 0, constant, 0, 5);
+				w = currentInstruction.RS1Val.getWord(0).shiftLeft(constant);
+				currentInstruction.EVal = new DoubleWord(w,true);
+				break;
+			case "SRLIW":
+				constant = new boolean[5];
+				System.arraycopy(currentInstruction.immediate, 0, constant, 0, 5);
+				w = currentInstruction.RS1Val.getWord(0).shiftRight(constant,true);
+				currentInstruction.EVal = new DoubleWord(w,true); 
+				break;
+			case "SRAIW":
+				constant = new boolean[5];
+				System.arraycopy(currentInstruction.immediate, 0, constant, 0, 5);
+				w = currentInstruction.RS1Val.getWord(0).shiftRight(constant,false);
+				currentInstruction.EVal = new DoubleWord(w,true); 
+				break;	
+			case "ADDIW":	
+				constant = new boolean[12];
+				System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
+				constant = ALU.signExtension(constant, false, 32);
+				w = new Word(constant);
+				valE = new DoubleWord(currentInstruction.RS1Val.getWord(0).add(w),true);
+				break;
+			default:
+				constant = new boolean[12];
+				System.arraycopy(currentInstruction.immediate, 0, constant, 0, 12);
+				constant = ALU.signExtension(constant, false, 64);
+				valE = new DoubleWord(ALU.IADD(currentInstruction.RS1Val.bitArray,constant));
+				currentInstruction.EVal = valE; 
+				break;			
+			}
 		}
 		if(currentInstruction.instruction.equals("JALR")) {
 			Processor.pcAddresses[0] = currentInstruction.EVal;
@@ -567,22 +579,28 @@ public class Processor {
 			status = "AOK";
 			System.out.println(registerFile.get("pc").calculateValueSigned());
 			for(long l: Compiler.COMPILED_CONSTANTS.keySet()) {
-				LittleEndian le = Compiler.COMPILED_CONSTANTS.get(l);
-				if(le instanceof BYTE)
-					Memory.storeBYTE(l, (BYTE)le);
-				if(le instanceof HalfWord)
-					Memory.storeHalfWord(l, (HalfWord)le);
-				if(le instanceof Word)
-					Memory.storeWord(l, (Word)le);
-				if(le instanceof DoubleWord)
-					Memory.storeDoubleWord(l, (DoubleWord)le);
-				System.out.println(Memory.loadWord(l) + " "+ l);
+				try {
+					LittleEndian le = Compiler.COMPILED_CONSTANTS.get(l);
+					if(le instanceof BYTE)
+						Memory.storeBYTE(l, (BYTE)le);
+					if(le instanceof HalfWord)
+						Memory.storeHalfWord(l, (HalfWord)le);
+					if(le instanceof Word)
+						Memory.storeWord(l, (Word)le);
+					if(le instanceof DoubleWord)
+						Memory.storeDoubleWord(l, (DoubleWord)le);
+					System.out.println(Memory.loadWord(l) + " "+ l);
+				} catch(MemoryException e) {
+					status = "HLT";
+					exception = e.getMessage();
+				}
 			}
 			stopCount = -1;
 			registerFile.reset();
 			JALRStall = false;
 			stopFetching = false;
 			JALRTempStall = false;
+			exception = null;
 		} else {
 			status = "HLT";
 		}
@@ -597,13 +615,15 @@ public class Processor {
 		JALRStall = false;
 		stopFetching = false;
 		JALRTempStall = false;
+		initialized = true;
+		exceptionGenerated = false;
 	}
-	
+
 	public static void clear() {
 		Memory.memory.clear();
 		clearArrays();
 	}
-	
+
 
 	private static void clearArrays() {
 		for(int i = 0; i < pcAddresses.length; i++)
@@ -616,10 +636,17 @@ public class Processor {
 		if(status.equals("AOK")) {
 			Processor.stepBeforeMem = Memory.createImage();
 			Processor.stepBeforeReg = Processor.registerFile.createImage();
-			while(status.equals("AOK") && Processor.pipeLineIncrement() == false) {
+			try {
+				while(status.equals("AOK") && Processor.pipeLineIncrement() == false) {
+					if(status.equals("AOK"))
+						status = (validInstruction()) ? "AOK" : "HLT";
+				}
+			} catch(ProcessorException e) {
+				exception = e.getMessage();
+				exceptionGenerated = true;
+			} 
+			if(status.equals("AOK"))
 				status = (validInstruction()) ? "AOK" : "HLT";
-			}
-			status = (validInstruction()) ? "AOK" : "HLT";
 			if(status.equals("AOK")) {
 				Processor.stepAfterMem = Memory.createImage();
 				Processor.stepAfterReg = Processor.registerFile.createImage();
@@ -627,10 +654,10 @@ public class Processor {
 				Processor.stepBeforeMem = Processor.finalMemory = Memory.createImage();
 				Processor.stepBeforeReg = Processor.finalRegisterFile = Processor.registerFile.createImage();
 			}
-			
-			
+
+
 		}
-		
+
 	}
 
 	private static boolean validInstruction() {
@@ -648,10 +675,16 @@ public class Processor {
 		Processor.finalMemory = Memory.createImage();
 		Processor.finalRegisterFile = Processor.registerFile.createImage();
 	}
-	
+	public static String exception;
+	public static boolean exceptionGenerated;
 	public static void clockPulse() {
 		if(status.equals("AOK")) {
-			Processor.pipeLineIncrement();
+			try {
+				Processor.pipeLineIncrement();
+			} catch(ProcessorException e) {
+				exception = e.getMessage();
+				exceptionGenerated = true;
+			} 
 		}
 	}
 

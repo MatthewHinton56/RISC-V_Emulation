@@ -172,4 +172,12 @@ public abstract class LittleEndian {
 		return ALU.Equal(this.bitArray, le.bitArray);
 	}
 
+	public boolean isZero() {
+		for(int i = 0; i < bitArray.length; i++) {
+			if(bitArray[i])
+				return false;
+		}
+		return true;
+	}
+	
 }

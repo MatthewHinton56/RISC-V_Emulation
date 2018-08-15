@@ -93,6 +93,8 @@ public class Word extends LittleEndian{
 	}
 
 	public Word div(Word rS2Val, boolean signed, boolean remainder) {
+		if(rS2Val.isZero())
+			throw new ArithmeticException("Attempting to divide by 0");
 		boolean[] out;
 		if(signed) {
 			out = ALU.signedDivision(rS2Val.bitArray, this.bitArray, remainder);

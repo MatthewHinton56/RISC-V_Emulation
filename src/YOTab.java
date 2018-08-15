@@ -154,35 +154,46 @@ public class YOTab extends Tab {
 		border.setLeft(textBorder);
 		border.setRight(displayPane);
 		border.setCenter(memDisplayScrollPane);
-		
+
 		this.setContent(border);
 		this.setText(fileName);
 	}
 
 	protected void stepDisplay() {
-		outputDisplay.setText(outputDisplay.getText() + "STEP:\n");
-		if(Processor.status.equals("HLT")) {
-			outputDisplay.setText(outputDisplay.getText() + "PC: " + displayText(Processor.completedInstruction.address) + "\n");
-			outputDisplay.setText(outputDisplay.getText() + "Completed Instruction: " + Processor.completedInstruction.buildDisplayInstruction() +"\n");
-			outputDisplay.setText(outputDisplay.getText() + registerDisplay());
-			outputDisplay.setText(outputDisplay.getText() + memoryDisplay());
-			outputDisplay.setText(outputDisplay.getText() + registerDifference(Processor.initialRegisterFile, Processor.finalRegisterFile, "STEP complete"));
-			outputDisplay.setText(outputDisplay.getText() + memoryDifference(Processor.initialMemory, Processor.finalMemory, "STEP complete"));
-		} else {
-			outputDisplay.setText(outputDisplay.getText() + "PC: " + displayText(Processor.completedInstruction.address) + "\n");
-			outputDisplay.setText(outputDisplay.getText() + "Completed Instruction: " + Processor.completedInstruction.buildDisplayInstruction() +"\n");
-			outputDisplay.setText(outputDisplay.getText() + registerDifference(Processor.stepBeforeReg, Processor.stepAfterReg, "STEP"));
-			outputDisplay.setText(outputDisplay.getText() + memoryDifference(Processor.stepBeforeMem, Processor.stepAfterMem, "STEP"));
+		if(Processor.initialized) {
+			outputDisplay.setText(outputDisplay.getText() + "STEP:\n");
+			if(Processor.status.equals("HLT")) {
+				if(Processor.exceptionGenerated)
+					outputDisplay.setText(outputDisplay.getText() + "The processor exited with:\n" + Processor.exception+"\n");
+				else {
+					outputDisplay.setText(outputDisplay.getText() + "The program has completed its execution:\n");
+					outputDisplay.setText(outputDisplay.getText() + "PC: " + displayText(Processor.registerFile.get("pc")) + "\n");
+					outputDisplay.setText(outputDisplay.getText() + "Completed Instruction: " + Processor.completedInstruction.buildDisplayInstruction() +"\n");
+					outputDisplay.setText(outputDisplay.getText() + registerDisplay());
+					outputDisplay.setText(outputDisplay.getText() + memoryDisplay());
+					outputDisplay.setText(outputDisplay.getText() + registerDifference(Processor.initialRegisterFile, Processor.finalRegisterFile, "FINAL"));
+					outputDisplay.setText(outputDisplay.getText() + memoryDifference(Processor.initialMemory, Processor.finalMemory, "FINAL"));
+				}
+			} else {
+				outputDisplay.setText(outputDisplay.getText() + "PC: " + displayText(Processor.completedInstruction.address) + "\n");
+				outputDisplay.setText(outputDisplay.getText() + "Completed Instruction: " + Processor.completedInstruction.buildDisplayInstruction() +"\n");
+				outputDisplay.setText(outputDisplay.getText() + registerDifference(Processor.stepBeforeReg, Processor.stepAfterReg, "STEP"));
+				outputDisplay.setText(outputDisplay.getText() + memoryDifference(Processor.stepBeforeMem, Processor.stepAfterMem, "STEP"));
+			}
 		}
 	}
 
 	protected void runDisplay() {
-		outputDisplay.setText(outputDisplay.getText() + "RUN:\n");
-		outputDisplay.setText(outputDisplay.getText() + "PC: " + displayText(Processor.registerFile.get("pc")) + "\n");
-		outputDisplay.setText(outputDisplay.getText() + registerDisplay());
-		outputDisplay.setText(outputDisplay.getText() + memoryDisplay());
-		outputDisplay.setText(outputDisplay.getText() + registerDifference(Processor.initialRegisterFile, Processor.finalRegisterFile, "RUN"));
-		outputDisplay.setText(outputDisplay.getText() + memoryDifference(Processor.initialMemory, Processor.finalMemory, "RUN"));
+		if(Processor.initialized) {
+			outputDisplay.setText(outputDisplay.getText() + "RUN:\n");
+			outputDisplay.setText(outputDisplay.getText() + "PC: " + displayText(Processor.registerFile.get("pc")) + "\n");
+			if(Processor.exceptionGenerated)
+				outputDisplay.setText(outputDisplay.getText() + "The processor exited with: " + Processor.exception+"\n");
+			outputDisplay.setText(outputDisplay.getText() + registerDisplay());
+			outputDisplay.setText(outputDisplay.getText() + memoryDisplay());
+			outputDisplay.setText(outputDisplay.getText() + registerDifference(Processor.initialRegisterFile, Processor.finalRegisterFile, "FINAL"));
+			outputDisplay.setText(outputDisplay.getText() + memoryDifference(Processor.initialMemory, Processor.finalMemory, "FINAL"));
+		}
 	}
 
 	public void initializeDisplay() {
@@ -215,8 +226,8 @@ public class YOTab extends Tab {
 
 	private String memoryDisplay() {
 		String output = "Memory:\n";
-		for(String reg: Processor.registerFile.keySet()) {
-			output += String.format("%3s", reg) + " = " + displayText(Processor.registerFile.get(reg))+ "\n";
+		for(Long address: Memory.memory.keySet()) {
+			output +=  "0x" + Long.toString(address, 16)+ " = " + displayText(Memory.memory.get(address))+ "\n";
 		}
 		return output+"\n";
 	}

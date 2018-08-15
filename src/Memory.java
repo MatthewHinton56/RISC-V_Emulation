@@ -18,8 +18,7 @@ public class Memory {
 	public static DoubleWord loadDoubleWord(long position) {
 		String immediate = "";
 		if(position % 8 != 0) {
-			Processor.status = "HLT";
-			return null;
+			throw new MemoryException(position, "DoubleWord");
 		}
 		
 		for(long i = position; i < position + 8; i++) {
@@ -35,20 +34,21 @@ public class Memory {
 
 	public static boolean storeDoubleWord(long position, DoubleWord val) {
 		if(position % 8 != 0) {
-			Processor.status = "HLT";
-			return false;
+			throw new MemoryException(position, "DoubleWord");
 		}
+		
 		for(long i = position; i < position + 8; i++)
 			memory.put(i, new BYTE(val.getBYTE((int) (i-position)).generateHex()));
+		
 		return true;
 	}
 
 	public static Word loadWord(long position) {
 		String immediate = "";
 		if(position % 4 != 0) {
-			Processor.status = "HLT";
-			return null;
+			throw new MemoryException(position, "Word");
 		}
+		
 		for(long i = position; i < position + 4; i++) {
 			if(memory.get(i) == null) {
 				immediate += "00";
@@ -62,9 +62,7 @@ public class Memory {
 
 	public static HalfWord loadHalfWord(long position) {
 		if(position % 2 != 0) {
-			Processor.status = "HLT";
-			Processor.stopCount = 1;
-			return null;
+			throw new MemoryException(position, "HalfWord");
 		}
 		String immediate = "";
 		for(long i = position; i < position + 2; i++) {
@@ -91,9 +89,9 @@ public class Memory {
 
 	public static boolean storeWord(long position, Word val) {
 		if(position % 4 != 0) {
-			Processor.status = "HLT";
-			return false;
+			throw new MemoryException(position, "Word");
 		}
+		
 		for(long i = position; i < position + 4; i++)
 			memory.put(i, new BYTE(val.getBYTE((int) (i-position)).generateHex()));
 		return true;
@@ -101,9 +99,9 @@ public class Memory {
 
 	public static boolean storeHalfWord(long position, HalfWord val) {
 		if(position % 2 != 0) {
-			Processor.status = "HLT";
-			return false;
+			throw new MemoryException(position, "HalfWord");
 		}
+		
 		for(long i = position; i < position + 2; i++)
 			memory.put(i, new BYTE(val.getBYTE((int) (i-position)).generateHex()));
 		return true;
