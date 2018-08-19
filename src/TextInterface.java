@@ -38,7 +38,7 @@ public class TextInterface {
 			String input = inputScanner.nextLine();
 			String[] parsedInput = input.split("\\s+");
 			if(parsedInput.length > 0) {
-			switch(parsedInput[0]) {
+			switch(parsedInput[0].toLowerCase()) {
 			case "q":
 			case "quit":
 				System.out.println("Program Exitting");
