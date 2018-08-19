@@ -243,6 +243,7 @@ public class ALU {
 	//if remainder is true, returns the remainder
 	public static boolean[] unsignedDivision(boolean[] divisor, boolean[] dividend, boolean remainder) {
 		boolean[] quotient = new boolean[divisor.length];
+		dividend = cloneArray(dividend);
 		divisor = divisorShift(divisor);
 		for(int i = rightMostOne(divisor); i >= 0; i--) {
 			if(canSubtract(dividend, divisor)) {
@@ -334,6 +335,12 @@ public class ALU {
 		return (long)(Math.pow(2, bitArray.length-1)*-1);
 	}
 
-
+	public static boolean[] cloneArray(boolean[] bitArray) {
+		boolean[] c = new boolean[bitArray.length];
+		for(int i = 0; i < bitArray.length; i++) {
+			c[i] = bitArray[i];
+		}
+		return bitArray;
+	}
 
 }
