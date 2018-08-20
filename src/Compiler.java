@@ -365,8 +365,10 @@ public class Compiler {
 	}
 
 	private static String lineCorrection(String line) {
+		if(line.charAt(0) == '#')
+			return "";
 		if(line.contains("#"))
-			line = line.substring(line.indexOf("#"));
+			line = line.substring(0, line.indexOf("#"));
 		if(line.contains("(")) {
 			String[] splitLine = split(line);
 			String instruction = splitLine[0];

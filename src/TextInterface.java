@@ -31,6 +31,7 @@ public class TextInterface {
 		String fileText = "";
 		boolean fileLoad = false;
 		boolean programCompiled = false;
+		boolean programInitialized = false;
 		String compiledText = "";
 		Scanner inputScanner = new Scanner(System.in); 
 		while(running) {
@@ -38,76 +39,103 @@ public class TextInterface {
 			String input = inputScanner.nextLine();
 			String[] parsedInput = input.split("\\s+");
 			if(parsedInput.length > 0) {
-			switch(parsedInput[0].toLowerCase()) {
-			case "q":
-			case "quit":
-				System.out.println("Program Exitting");
-				running = false;
-				break;
-			case "load":
-			case "l":
-				if(parsedInput.length >= 2) {
-					fileText = loadFile(parsedInput[1]);
-					fileLoad = (fileText != null);
-					compiledText = "";
-					programCompiled = false; 
-				} else {
-					System.out.println("No file given");
+				switch(parsedInput[0].toLowerCase()) {
+				case "q":
+				case "quit":
+					System.out.println("Program Exitting");
+					running = false;
+					break;
+				case "load":
+				case "l":
+					if(parsedInput.length >= 2) {
+						fileText = loadFile(parsedInput[1]);
+						fileLoad = (fileText != null);
+						compiledText = "";
+						programCompiled = false; 
+						programInitialized = false;
+					} else {
+						System.out.println("No file given");
+					}
+					break;
+				case "compile":
+					compiledText = compile(fileLoad, fileText);
+					programCompiled = (compiledText != null);
+					programInitialized = false;
+					break;
+				case "initialize":
+				case "i":
+					if(programCompiled) {
+						processFlags(parsedInput);
+						initialize();
+						programInitialized = true;
+					} else {
+						System.out.println("No Program is currently compiled");
+					}
+					break;
+				case "disas":
+					if(programCompiled) {
+						System.out.println(disas(compiledText));
+					} else {
+						System.out.println("No code currently compiled");
+					}
+					break;
+				case "step":
+				case "s":
+				case "next":
+					if(programInitialized) {
+						processFlags(parsedInput);
+						step();
+					} else {
+						System.out.println("Program is not initialized");
+					}
+					break;
+				case "r":
+				case "run":
+					if(programInitialized) {
+						processFlags(parsedInput);
+						run();
+						} else {
+							System.out.println("Program is not initialized");
+						}
+					break;
+				case "clockpulse":
+				case "cp":
+				case "c":
+					if(programInitialized) {
+						processFlags(parsedInput);
+						clockPulse();
+					} else {
+						System.out.println("Program is not initialized");
+					}
+					break;
+				case "reg":
+				case "register":
+					if(programInitialized) {
+						processFlags(parsedInput);
+						register(); 
+					} else {
+						System.out.println("Program is not initialized");
+					}
+					break;
+				case "mem":
+				case "memory":
+					if(programInitialized) {
+						processFlags(parsedInput);
+						memory(); 
+					} else {
+						System.out.println("Program is not initialized");
+					}
+					break;
+				case "pipeline":
+				case "p":
+					if(programInitialized)
+						pipeline(compiledText);
+					break;
+				default: 
+					if(input.length() > 0) {
+						System.out.println("Invalid command: " + input);
+					}
 				}
-				break;
-			case "compile":
-				compiledText = compile(fileLoad, fileText);
-				programCompiled = (compiledText != null);
-				break;
-			case "initialize":
-			case "i":
-				if(programCompiled) {
-					processFlags(parsedInput);
-					initialize();
-				} else {
-					System.out.println("No Program is currently compiled");
-				}
-				break;
-			case "disas":
-				if(programCompiled) {
-					System.out.println(disas(compiledText));
-				} else {
-					System.out.println("No code currently compiled");
-				}
-				break;
-			case "step":
-			case "s":
-			case "next":
-				step();
-				break;
-			case "r":
-			case "run":
-				run();
-				break;
-			case "clockpulse":
-			case "cp":
-			case "c":
-				clockPulse();
-				break;
-			case "reg":
-			case "register":
-				processFlags(parsedInput);
-				register();
-				break;
-			case "mem":
-			case "memory":
-				processFlags(parsedInput);
-				memory();
-				break;
-			case "pipeline":
-			case "p":
-				pipeline(compiledText);
-				break;
-			default: 
-				if(input.length() > 0) {
-					System.out.println("Invalid command: " + input);
-				}
-			}
 			}
 		}
 		inputScanner.close();
@@ -120,7 +148,7 @@ public class TextInterface {
 			System.out.println("Processor is not initialized");
 		}
 	}
-	
+
 	private static void register() {
 		if(Processor.initialized) {
 			System.out.println(registerDisplay());
